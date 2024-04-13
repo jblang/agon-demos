@@ -19,9 +19,9 @@ GradientStart:  equ     128 ; starting character to load (must be <= 192)
 
 ; Gradient bitmaps
 Gradient:
-    .db 23, GradientStart+0, $00,$00,$08,$00,$00,$00,$04,$00
-    .db 23, GradientStart+1, $00,$00,$10,$00,$40,$00,$04,$00
-    .db 23, GradientStart+2, $00,$00,$00,$00,$00,$00,$00,$00
+    .db 23, GradientStart+0, $00,$00,$00,$00,$00,$00,$00,$00
+    .db 23, GradientStart+1, $00,$00,$08,$00,$00,$00,$04,$00
+    .db 23, GradientStart+2, $00,$00,$10,$00,$40,$00,$04,$00
     .db 23, GradientStart+3, $00,$02,$10,$00,$40,$00,$04,$00
     .db 23, GradientStart+4, $00,$02,$10,$00,$40,$00,$04,$20
     .db 23, GradientStart+5, $00,$02,$10,$02,$40,$00,$04,$20
@@ -85,20 +85,3 @@ Gradient:
     .db 23, GradientStart+63, $ff,$ff,$ff,$ff,$ff,$ef,$ff,$ff
 GradientLength: equ $ - Gradient
 GradientCount:  equ GradientLength / 10
-
-; Loads the gradient into the VDP 
-LoadGradient:
-    ld hl, Gradient
-    ld bc, GradientLength
-    rst.lil $18
-    ret
-    
-; Draws all 64 gradient characters
-DrawGradient:
-    ld a, GradientStart
-    ld b, GradientCount
-DrawGradientLoop:
-    rst.lil $10
-    inc a
-    djnz DrawGradientLoop
-    ret

@@ -1,0 +1,20 @@
+; C64 Palette from https://www.c64-wiki.com/wiki/Color
+C64Palette:
+    .db 19, $0, $FF, $00,$00,$00
+    .db 19, $1, $FF, $FF,$FF,$FF
+    .db 19, $2, $FF, $88,$00,$00
+    .db 19, $3, $FF, $AA,$FF,$EE
+    .db 19, $4, $FF, $CC,$44,$CC
+    .db 19, $5, $FF, $00,$CC,$55
+    .db 19, $6, $FF, $00,$00,$AA
+    .db 19, $7, $FF, $EE,$EE,$77
+    .db 19, $8, $FF, $DD,$88,$55
+    .db 19, $9, $FF, $66,$44,$00
+    .db 19, $A, $FF, $FF,$77,$77
+    .db 19, $B, $FF, $33,$33,$33
+    .db 19, $C, $FF, $77,$77,$77
+    .db 19, $D, $FF, $AA,$FF,$66
+    .db 19, $E, $FF, $00,$88,$FF
+    .db 19, $F, $FF, $BB,$BB,$BB 
+C64PaletteLength:   equ $ - C64Palette
+C64PaletteCount:    equ C64PaletteLength / 5

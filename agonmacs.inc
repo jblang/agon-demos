@@ -19,6 +19,13 @@
 	rst.lil $10
 	endmacro
 
+	macro NewLine
+    ld a, 13					; carriage return
+    rst.lil $10
+    ld a, 10					; line feed
+    rst.lil $10
+	endmacro
+	
 	macro MoveTo x,y
 	ld a, 31					; move to...
 	rst.lil $10
@@ -42,3 +49,10 @@
 	add a, 128
 	rst.lil $10
 	endmacro
+
+	macro SendBytes start, length
+    ld hl, start
+    ld bc, length
+    rst.lil $18
+    endmacro
+    

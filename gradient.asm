@@ -22,6 +22,7 @@
 ; Credits:
 ; - Gradients from Produkthandler Kom Her by Camelot: https://csdb.dk/release/?id=760
 ; - usg.asm lesson by Richard Turnnidge: https://github.com/richardturnnidge/lessons
+    include "agonmacs.inc"
 
     .assume adl=1                       ; ez80 ADL memory mode
     .org $40000                         ; load code here
@@ -39,8 +40,12 @@ start:
     push ix
     push iy
 
-    call LoadGradient                   ; load gradient into user-defined graphics
-    call DrawGradient                   ; display all 64 characters
+    VdpMode 0
+    PaperColor 2
+    PenColor 10
+    SendBytes C64Palette, C64PaletteLength
+    SendBytes Gradient, GradientLength
+    call DrawGradients                  ; display all 64 characters
 
     pop iy                              ; pop all registers back from the stack
     pop ix
@@ -50,4 +55,30 @@ start:
     ld hl,0                             ; load the MOS API return code (0) for no errors.
     ret                                 ; return to MOS
 
+; Draws all 64 gradient characters
+DrawGradients:
+    ld d, 0
+PaperColorLoop:
+    PaperColor d
+    ld e, 0
+PenColorLoop:
+    PenColor e
+    ld a, GradientStart
+    ld b, GradientCount
+GradientCharLoop:
+    rst.lil $10
+    inc a
+    djnz GradientCharLoop
+    NewLine
+    inc e
+    ld a, $f
+    and e
+    jp nz, PenColorLoop
+    inc d
+    ld a, $f
+    and d
+    jp nz, PaperColorLoop
+    ret
+
     include "gradient.inc"
+    include "palette.inc"

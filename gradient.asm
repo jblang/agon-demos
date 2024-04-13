@@ -46,6 +46,8 @@ start:
     SendBytes C64Palette, C64PaletteLength
     SendBytes Gradient, GradientLength
     call DrawGradients                  ; display all 64 characters
+    PaperColor 0
+    PenColor 15
 
     pop iy                              ; pop all registers back from the stack
     pop ix

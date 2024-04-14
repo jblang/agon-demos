@@ -12,14 +12,15 @@
 ; 6) Export characters to text/asm as "gradient.inc"
 ; 7) Delete everything except the first 32 .byte lines (64 chars; 2 per line)
 ; 8) Split into 8 bytes per line (1 char per line); change .byte to .db
-; 9) Prefix each line with VDU load character command (23), GradientStart+n (character number)
-; 10) Define labels; write LoadGradient and DrawGradient procedures
+; 9) Define labels GradientStart, Gradient, GradientLength, GradientCount
+; 10) Prefix each .db with VDU load character command (23) and character number (GradientStart+n)
 
 GradientStart:  equ     128 ; starting character to load (must be <= 192)
 
 ; Gradient bitmaps
 Gradient:
     .db 23, GradientStart+0, $00,$00,$00,$00,$00,$00,$00,$00
+GradientStride: equ $ - Gradient
     .db 23, GradientStart+1, $00,$00,$08,$00,$00,$00,$04,$00
     .db 23, GradientStart+2, $00,$00,$10,$00,$40,$00,$04,$00
     .db 23, GradientStart+3, $00,$02,$10,$00,$40,$00,$04,$00
@@ -84,4 +85,4 @@ Gradient:
     .db 23, GradientStart+62, $ff,$fb,$ff,$ff,$ff,$ef,$ff,$ff
     .db 23, GradientStart+63, $ff,$ff,$ff,$ff,$ff,$ef,$ff,$ff
 GradientLength: equ $ - Gradient
-GradientCount:  equ GradientLength / 10
+GradientCount:  equ GradientLength / GradientStride

@@ -40,15 +40,23 @@ start:
     push ix
     push iy
 
-    VdpMode 0
-    PaperColor 2
-    PenColor 10
-    SendBytes C64Palette, C64PaletteLength
-    SendBytes Gradient, GradientLength
-    call DrawGradients                  ; display all 64 characters
-    PaperColor 0
-    PenColor 15
+    VdpMode 0                               ; 640x480 16 colors
+    PenColor 14                             ; C64 Text Colors
+    PaperColor 6
+    ClearScreen
+    NewLine
+    NewLine
+    NewLine
+    SendBytes Message, MessageLength        ; Output banner
+    NewLine
+    NewLine
+    NewLine
+    NewLine
 
+    SendBytes C64Palette, C64PaletteLength  ; load C64 color palette
+    SendBytes Gradient, GradientLength      ; load 64 character gradient
+    call DrawPalettes                       ; display all 64 characters
+    
     pop iy                              ; pop all registers back from the stack
     pop ix
     pop de
@@ -57,29 +65,36 @@ start:
     ld hl,0                             ; load the MOS API return code (0) for no errors.
     ret                                 ; return to MOS
 
-; Draws all 64 gradient characters
-DrawGradients:
-    ld d, 0
-PaperColorLoop:
-    PaperColor d
-    ld e, 0
-PenColorLoop:
-    PenColor e
+Message:
+    .db "Gradient Demo by J.B. Langston"
+MessageLength:  equ $ - Message
+
+DrawGradient:
     ld a, GradientStart
     ld b, GradientCount
-GradientCharLoop:
+GradientLoop:
     rst.lil $10
     inc a
-    djnz GradientCharLoop
-    NewLine
-    inc e
-    ld a, $f
-    and e
-    jp nz, PenColorLoop
-    inc d
-    ld a, $f
-    and d
-    jp nz, PaperColorLoop
+    djnz GradientLoop
+    ret
+
+DrawPalettes:
+    ld hl, PlasciiPalette
+    ld a, PlasciiPaletteLength
+PaletteLoop:
+    push af
+    ld c, (hl)
+    PaperColor c
+    inc hl
+    ld c, (hl)
+    PenColor c
+    call DrawGradient
+    PaperColor 0
+    pop af
+    dec a
+    jp nz, PaletteLoop
+    PenColor 15                 ; white on black
+    PaperColor 0
     ret
 
     include "gradient.inc"

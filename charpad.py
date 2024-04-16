@@ -18,13 +18,14 @@ import fileinput
 INPUT_PREFIX = ".byte "     # prefix of lines to input
 MAX_LINES = 32              # maximum number of lines to input
 SKIP_CHARS = 1              # Number of characters to skip (comment out)
+START_CHAR = 128            # Starting character number
 INDENT = "    "             # characters to indent
 COMMENT_PREFIX = ";"        # assembler comment prefix
 DIRECTIVE_PREFIX = "."      # prefix for assembler directives
 DEFINE_DIRECTIVE = "db"     # assembler directive to define a byte
 VDP_PREFIX = "23,0,"        # VDP prefix bytes to define a custom character
 LABEL = "Gradient"          # label to use for gradient
-LOADER = f"Load{LABEL}"     # name of loader function; set to None to skip
+LOADER = True               # whether to generate a loader function
 
 # extract characters from input file
 lines = 0
@@ -51,34 +52,22 @@ print(f"{LABEL}Count: equ {LABEL}Length / {LABEL}Stride")
 
 # Assembly routine to load the custom chars
 if LOADER:
-    LOADER = f"""
-; Loads characters into VDU
-; A = starting character number
-; HL = starting character address
-; BC = total bytes to load
-{LOADER}:
-    push de                     ; save registers                 
-    push bc
-    push hl
-    add hl, bc                  ; calculate end address
-    push hl                     ; save for later in bc
-    pop bc
-    pop hl                      ; restore original hl param
-    push hl                     ; save it
-    inc hl
-{LOADER}Loop:
+    print(f"""{LABEL}Start: equ {START_CHAR}
+
+; Load {LABEL} characters into VDU
+Load{LABEL}:
+    ld hl, {LABEL}
+    inc hl                      ; start at second byte of first character
+    ld de, {LABEL}Stride
+    ld a, {LABEL}Start
+    ld b, {LABEL}Count
+Load{LABEL}Loop:
     ld (hl), a                  ; set character number
     inc a                       ; increment character number
-    add hl, de                  ; move to next character
-    push hl
-    or a                        ; compare current hl to end address
-    sbc hl, bc
-    pop hl
-    jp nc, {LOADER}Loop         ; loop until past end address
-    pop hl                      ; send characters to VDP
-    pop bc
+    add hl, de
+    djnz Load{LABEL}Loop
+    ld hl, {LABEL}
+    ld bc, {LABEL}Length
     rst.lil $18
-    pop de
     ret
-"""
-    print(LOADER)
+""")

@@ -22,80 +22,54 @@
 ; Credits:
 ; - Gradients from Produkthandler Kom Her by Camelot: https://csdb.dk/release/?id=760
 ; - usg.asm lesson by Richard Turnnidge: https://github.com/richardturnnidge/lessons
+
+ScreenMode: equ 0
+ScreenWidth: equ 80
+ScreenHeight: equ 60
+
     include "agonmacs.inc"
 
-    .assume adl=1                       ; ez80 ADL memory mode
-    .org $40000                         ; load code here
+    .assume adl=1                           ; ez80 ADL memory mode
+    .org $40000                             ; load code here
 
-    jp start                            ; jump to start of code
+    jp Main                                 ; jump to start of code
 
-    .align 64                           ; MOS header
+    .align 64                               ; MOS header
     .db "MOS",0,1     
 
-start:
+Main:
             
-    push af                             ; store all the registers
+    push af                                 ; store all the registers
     push bc
     push de
     push ix
     push iy
 
     VdpMode 0                               ; 640x480 16 colors
-    PenColor 14                             ; C64 Text Colors
-    PaperColor 6
+
+    PenColor 15
+    PaperColor 0
     ClearScreen
-    NewLine
-    NewLine
-    NewLine
     SendBytes Message, MessageLength        ; Output banner
     NewLine
-    NewLine
-    NewLine
-    NewLine
 
-    SendBytes C64Palette, C64PaletteLength  ; load C64 color palette
-    SendBytes Gradient, GradientLength      ; load 64 character gradient
-    call DrawPalettes                       ; display all 64 characters
+    call LoadGradient
+    call ShowPalettes
+    PenColor 15
+    PaperColor 0
+    NewLine
     
-    pop iy                              ; pop all registers back from the stack
+    pop iy                                  ; pop all registers back from the stack
     pop ix
     pop de
     pop bc
     pop af
-    ld hl,0                             ; load the MOS API return code (0) for no errors.
-    ret                                 ; return to MOS
+    ld hl,0                                 ; load the MOS API return code (0) for no errors.
+    ret                                     ; return to MOS
 
 Message:
     .db "Gradient Demo by J.B. Langston"
 MessageLength:  equ $ - Message
-
-DrawGradient:
-    ld a, GradientStart
-    ld b, GradientCount
-GradientLoop:
-    rst.lil $10
-    inc a
-    djnz GradientLoop
-    ret
-
-DrawPalettes:
-    ld hl, PlasciiPalette
-    ld a, PlasciiPaletteLength
-PaletteLoop:
-    push af
-    ld c, (hl)
-    PaperColor c
-    inc hl
-    ld c, (hl)
-    PenColor c
-    call DrawGradient
-    PaperColor 0
-    pop af
-    dec a
-    jp nz, PaletteLoop
-    PenColor 15                 ; white on black
-    PaperColor 0
-    ret
 
     include "gradient.inc"
     include "palette.inc"

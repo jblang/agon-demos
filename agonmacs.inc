@@ -50,8 +50,8 @@
 	rst.lil $10
 	endmacro
 
-	macro SendBytes start, length
-    ld hl, start
+	macro SendBytes addr, length
+    ld hl, addr
     ld bc, length
     rst.lil $18
     endmacro

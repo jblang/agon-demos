@@ -19,9 +19,9 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
-ScreenMode:     equ 0                           ; 640x480 16 colors
-ScreenWidth:    equ 80
-ScreenHeight:   equ 60
+ScreenMode:     equ 9                           ; 640x480 16 colors
+ScreenWidth:    equ 40
+ScreenHeight:   equ 30
 ScreenSize:     equ ScreenWidth*ScreenHeight
 PageMask:       equ $ffff00                     ; 24-bit addresses
 

@@ -42,7 +42,7 @@ LoadC64Palette:
 SendScreenBuffer:
     SendByte VduCursorHome
     ld hl, ScreenBuffer
-    ld bc, ScreenSize
+    ld bc, ScreenSize+40+40+40+40+40+40+10+5 ; WTF?! it should not neeed this
 SendScreenBufferLoop:
     ld a, (hl)
     push bc

@@ -371,7 +371,7 @@ RandomParameters:
 DurationCnt:
         defb    0
 PlasmaParamPnt:
-        defw    0
+        DefPointer    0
 
 NextEffect:
         ld      a, (UseRandomParams)

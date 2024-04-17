@@ -19,57 +19,24 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
-; Credits:
-; - Gradients from Produkthandler Kom Her by Camelot: https://csdb.dk/release/?id=760
-; - usg.asm lesson by Richard Turnnidge: https://github.com/richardturnnidge/lessons
-
-ScreenMode: equ 0
-ScreenWidth: equ 80
-ScreenHeight: equ 60
-
-    include "agonmacs.inc"
-
-    .assume adl=1                           ; ez80 ADL memory mode
-    .org $40000                             ; load code here
-
-    jp Main                                 ; jump to start of code
-
-    .align 64                               ; MOS header
-    .db "MOS",0,1     
+    include "agon.inc"
+    include "utility.inc"
 
 Main:
-            
-    push af                                 ; store all the registers
-    push bc
-    push de
-    push ix
-    push iy
-
-    VdpMode 0                               ; 640x480 16 colors
-
-    PenColor 15
-    PaperColor 0
-    ClearScreen
-    SendBytes Message, MessageLength        ; Output banner
-    NewLine
-
+    call DefaultTextColor
+    call ClearScreen
+    ld hl, Message
+    call StringOut
     call LoadGradient
     call ShowPalettes
-    PenColor 15
-    PaperColor 0
-    NewLine
-    
-    pop iy                                  ; pop all registers back from the stack
-    pop ix
-    pop de
-    pop bc
-    pop af
-    ld hl,0                                 ; load the MOS API return code (0) for no errors.
-    ret                                     ; return to MOS
+    call DefaultTextColor
+    call NewLine
+    jp Exit
 
 Message:
-    .db "Gradient Demo by J.B. Langston"
+    .db "Gradient Demo by J.B. Langston", CR, LF, CR, LF, EOS
 MessageLength:  equ $ - Message
 
-    include "gradient.inc"
-    include "palette.inc"
+ColorPalette:
+    DefPointer 0
+ScreenBuffer:

@@ -1,0 +1,3 @@
+ez80asm plasma.asm
+load plasma.bin
+run

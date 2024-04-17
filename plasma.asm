@@ -1,5 +1,4 @@
 ; Plasma Effect for Z80
-; 
 ; Copyright 2018-2024 J.B. Langston
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a 
@@ -19,14 +18,8 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
-; 
-; Credits:
-; - Color Palettes and Sine Table from Plascii Petsma by Camelot
-;   https://csdb.dk/release/?id=159933
-; - Gradient bitmaps from Produkthandler Kom Her by Camelot
-;   https://csdb.dk/release/?id=760
-;
-; ===============================================================================================
+
+
 ; Plascii Petsma by Cruzer/Camelot has one of the nicest looking plasma effects I've seen for
 ; the C64. Since he included the source code, I was able to port it to the Z80 and TMS9918.   
 
@@ -43,45 +36,18 @@
 ; https://lodev.org/cgtutor/plasma.html
 
 NumSinePnts:    equ 8
-ScreenWidth:    equ 32
-ScreenHeight:   equ 24
-ScreenSize:     equ ScreenWidth*ScreenHeight
-MSX:            equ 0
 
-        org     $100
+; uncomment ONLY ONE of these depending on the platform
+        include "agon.inc"
+        ;include "rcmsx.inc"
 
-        ld      (OldSP), sp
-        ld      sp, Stack
-
-        ld      de, About
-        call    strout
-
-        call    z180detect                      ; detect Z180
-        ld      e, 0
-        jp      nz, NoZ180
-        call    z180getclk                      ; get clock multiple for tms wait
-NoZ180:
-        call    TmsSetWait                      ; set VDP wait loop based on clock multiple
-
-        call    TmsProbe                        ; find what port TMS9918A listens on
-        jp      z, NoTms
-        call    TmsTile
-
+Main:
         call    RandomSeed
         call    MakeSineTable
         call    MakeSpeedCode
-        call    LoadPatternTable
+        call    InitGraphics
         call    FirstEffect
-
-if MSX
-        di
-        ld      hl, ($39)
-        ld      (MSXVector), hl
-        ld      hl, MSXIntHandler
-        ld      ($39), hl
-        call    TmsIntEnable
-        ei
-endif
+        call    EnableInterrupt
 
 MainLoop:
         ld      a, (HoldEffect)
@@ -94,124 +60,44 @@ NoEffectCycle:
         ld      a, (StopAnimation)
         or      a
         call    z, CalcPlasmaFrame
-
-if MSX
-        ld      a, $ff
-        ld      (FrameReady), a
-WaitVsync:
-        ld      a, (FrameReady)
-        or      a
-        jp      nz, WaitVsync
-else
-WaitVsync:
-        call    TmsRegIn
-        and     $80
-        jr      z, WaitVsync
-
-        ld      hl, ScreenBuffer                ; display next frame
-        ld      de, (TmsNameAddr)
-        ld      bc, ScreenSize
-        call    TmsWrite
-endif
-
-        call    keypress
-        jp      z, MainLoop
-        call    ProcessCommand
+        ;call    WaitVSync
+        call    SendScreenBuffer
+        ;call    GetKey
+        ;jp      z, MainLoop
+        ;call    ProcessCommand
         jp      MainLoop
-
-Exit:
-        ld      sp, (OldSP)
-if MSX
-        di
-        ld      hl, (MSXVector)
-        ld      ($39), hl
-        ei
-        ld      a, ($fcb0)
-        rst     $30
-        db      $80
-        dw      $5f
-endif
-        rst     0
-
-if MSX
-FrameReady:
-        defb    0
-MSXIntHandler:
-        push    af
-        push    hl
-        push    de
-        push    bc
-        ld      a, (FrameReady)
-        or      a
-        jp      z, FrameNotReady
-        ld      de, (TmsNameAddr)
-        call    TmsWriteAddr
-        ld      hl, ScreenBuffer
-        ld      bc, (TmsPort)
-        ld      de, ScreenSize
-        inc     d
-MSXIntLoop:
-        ld      a, (hl)
-        out     (c), a
-        inc     hl
-        dec     e
-        jp      nz, MSXIntLoop
-        dec     d
-        jp      nz, MSXIntLoop
-        xor     a
-        ld      (FrameReady), a
-FrameNotReady:
-        pop     bc
-        pop     de
-        pop     hl
-        pop     af
-MSXVector:      equ $+1
-        jp      0
-endif
-
-NoTmsMessage:
-        defb    "TMS9918A not found, aborting!$"
-NoTms:  ld      de, NoTmsMessage
-        call    strout
         jp      Exit
 
 About:
-        defb    "Plasma for TMS9918", cr, lf
-        defb    "Z80 Code by J.B. Langston", cr, lf, cr, lf
+        defb    "Plasma for Z80 Computers", CR, LF
+        defb    "Z80 Code by J.B. Langston", CR, LF, CR, LF
         defb    "Color Palettes and Sine Routines ported from "
-        defb    "Plascii Petsma by Cruzer/Camelot", cr, lf
+        defb    "Plascii Petsma by Cruzer/Camelot", CR, LF
         defb    "Gradient Patterns ripped from "
-        defb    "Produkthandler Kom Her by Cruzer/Camelot", cr, lf, cr, lf
-        defb    "Press 'q' to quit, '?' for help.", cr, lf, "$"
+        defb    "Produkthandler Kom Her by Cruzer/Camelot", CR, LF, CR, LF
+        defb    "Press 'q' to quit, '?' for help.", CR, LF, EOS
 
 Help:
-        defb    cr, lf, "Commands:", cr, lf
-        defb    " ?     help", cr, lf
-        defb    " q     quit", cr, lf
-        defb    " h     hold current effect on/off", cr, lf
-        defb    " p     switch palette", cr, lf
-        defb    " n     next effect", cr, lf
-        defb    " d     default values", cr, lf
-        defb    " a     animation on/off", cr, lf
-        defb    " r     toggle random/playlist", cr, lf
-        defb    " v     view parameters", cr, lf, cr, lf
-        defb    "Parameter Selection:", cr, lf
-        defb    " x     x increments", cr, lf
-        defb    " y     y increments", cr, lf
-        defb    " i     initial values", cr, lf
-        defb    " c     linear animation speed", cr, lf
-        defb    " s     sine animation speeds", cr, lf
-        defb    " f     distortion frequencies", cr, lf, cr, lf
-        defb    "Parameter Modification:", cr, lf
-        defb    " 1-8   increment selected parameter (+ shift to decrement)", cr, lf
-        defb    " 0     clear selected parameters", cr, lf, "$"
-
-ShowHelp:
-if !MSX
-        ld      de, Help
-        call    strout
-endif
-        ret
+        defb    CR, LF, "Commands:", CR, LF
+        defb    " ?     help", CR, LF
+        defb    " q     quit", CR, LF
+        defb    " h     hold current effect on/off", CR, LF
+        defb    " p     switch palette", CR, LF
+        defb    " n     next effect", CR, LF
+        defb    " d     default values", CR, LF
+        defb    " a     animation on/off", CR, LF
+        defb    " r     toggle random/playlist", CR, LF
+        defb    " v     view parameters", CR, LF, CR, LF
+        defb    "Parameter Selection:", CR, LF
+        defb    " x     x increments", CR, LF
+        defb    " y     y increments", CR, LF
+        defb    " i     initial values", CR, LF
+        defb    " c     linear animation speed", CR, LF
+        defb    " s     sine animation speeds", CR, LF
+        defb    " f     distortion frequencies", CR, LF, CR, LF
+        defb    "Parameter Modification:", CR, LF
+        defb    " 1-8   increment selected parameter (+ shift to decrement)", CR, LF
+        defb    " 0     clear selected parameters", CR, LF, EOS
 
 ; command keys grouped by function
 Commands:
@@ -226,26 +112,26 @@ NumCommands:    equ $ - Commands
 
 ; pointers to command functions; must be 1-1 correspondence to commands
 CommandPointers:
-        defw    ShowHelp
-        defw    Exit
-        defw    ToggleHold
-        defw    NextPalette
-        defw    NextEffect
-        defw    InitEffect
-        defw    ToggleAnimation
-        defw    ViewParameters
-        defw    ToggleRandomParams
-        defw    ClearParameters
+        DefPointer    ShowHelp
+        DefPointer    Exit
+        DefPointer    ToggleHold
+        DefPointer    NextPalette
+        DefPointer    NextEffect
+        DefPointer    InitEffect
+        DefPointer    ToggleAnimation
+        DefPointer    ViewParameters
+        DefPointer    ToggleRandomParams
+        DefPointer    ClearParameters
 
 ; pointers to parameters; must be 1-1 correspondence to mode select commands
 ParameterPointers:
-        defw    SineAddsX
-        defw    SineAddsY
-        defw    SineStartsY
-        defw    SineSpeeds
-        defw    PlasmaFreqs
-        defw    CycleSpeed
-        defw    CycleSpeed+1
+        DefPointer    SineAddsX
+        DefPointer    SineAddsY
+        DefPointer    SineStartsY
+        DefPointer    SineSpeeds
+        DefPointer    PlasmaFreqs
+        DefPointer    CycleSpeed
+        DefPointer    CycleSpeed+1
 
 ; dispatch command key in a
 ProcessCommand:
@@ -284,7 +170,7 @@ FoundCommandKey:
 
 ; mode select command; set pointers to appropriate mode variables
 SelectedParameter:
-        defw    CycleSpeed
+        DefPointer    CycleSpeed
 SelectedParameterLength:
         defb    1
 
@@ -379,23 +265,20 @@ ClearParameterLoop:
 
 ; parameter display names
 SineAddsXMsg:
-        defb cr, lf, "x increment: $"
+        defb CR, LF, "x increment: $"
 SineAddsYMsg:
-        defb cr, lf, "y increment: $"
+        defb CR, LF, "y increment: $"
 SineStartsMsg:
-        defb cr, lf, "init values: $"
+        defb CR, LF, "init values: $"
 SineSpeedsMsg:
-        defb cr, lf, "sine speeds: $"
+        defb CR, LF, "sine speeds: $"
 PlasmaFreqMsg:
-        defb cr, lf, "plasma freq: $"
+        defb CR, LF, "plasma freq: $"
 CycleSpeedMsg:
-        defb cr, lf, "cycle speed: $"
+        defb CR, LF, "cycle speed: $"
 
 ; display current parameter values
 ViewParameters:
-if MSX
-        ret
-endif
         ld      hl, PlasmaParams
         ld      de, SineAddsXMsg
         call    ShowSinePnts
@@ -409,7 +292,7 @@ endif
         call    ShowTwoParams
         ld      de, CycleSpeedMsg
         call    ShowOneParam
-        call    crlf
+        call    NewLine
         ret
 ShowOneParam:
         ld      b, 1
@@ -422,7 +305,7 @@ ShowSinePnts:
 ShowBParams:
         push    hl
         push    bc
-        call    strout
+        call    StringOut
         pop     bc
         pop     hl
 ShowParameterLoop:
@@ -430,204 +313,16 @@ ShowParameterLoop:
         inc     hl
         push    hl
         push    bc
-        call    hexout
-        call    space
+        call    HexOut
+        call    Space
         pop     bc
         pop     hl
         djnz    ShowParameterLoop
         ret
 
-; MakeSineTable builds the sine table for a complete period from a precalculated quarter period.
-; The first 64 values are copied verbatim from the precomputed values. The next 64 values are
-; flipped horizontally by copying them in reverse order. The last 128 values are flipped 
-; vertically by complementing them. The vertically flipped values are written twice, first in
-; forward order, and then in reverse order to flip them horizontally and complete the period.
-; The resulting lookup table is 256 bytes long and stored on a 256-byte boundary so that a sine
-; value can be looked up by loading a single register with the input value.
-
-MakeSineTable:
-        ld      bc, SineSrc             ; source values
-        ld      de, SineTable           ; start of 1st quarter
-        ld      hl, SineTable+$7f       ; end of 2nd quarter
-        exx
-        ld      b, $40                  ; counter
-        ld      de, SineTable+$80       ; start of 3rd quarter
-        ld      hl, SineTable+$ff       ; end of 4th quarter
-SineLoop:
-        exx
-        ld      a, (bc)                 ; load source value
-        inc     bc
-        ld      (de), a                 ; store 1st quarter
-        inc     de
-        ld      (hl), a                 ; store 2nd quarter
-        dec     hl                      ; in reverse order
-        exx
-        cpl                             ; flip vertically
-        ld      (de), a                 ; store 3rd quarter
-        inc     de
-        ld      (hl), a                 ; store 4th quarter
-        dec     hl                      ; in reverse order
-        djnz    SineLoop
-        ret
-
-; Sine table contains pre-computed sine values converted to 8-bit integers.  
-; Real sine values from -1 to 1 correspond to unsigned integers from 0 to 255.
-; The first quarter of the period is pre-computed using python script:
-
-; #!/usr/bin/python3
-; import math
-; amp = 0xfe
-; for i in range(0, 0x40):
-;     sin = 2 + amp / 2 + amp * 0.499999 * math.sin(i / (0x100 / 2 / math.pi))
-;     if i & 7 == 0:
-;         print("defb    ", end="")
-;     print(hex(int(sin)).replace("0x", "$"), end="\n" if i & 7 == 7 else ",")
-
-SineSrc:
-        defb    $81,$84,$87,$8a,$8d,$90,$93,$96
-        defb    $99,$9c,$9f,$a2,$a5,$a8,$ab,$ae
-        defb    $b1,$b4,$b7,$ba,$bc,$bf,$c2,$c4
-        defb    $c7,$ca,$cc,$cf,$d1,$d3,$d6,$d8
-        defb    $da,$dc,$df,$e1,$e3,$e5,$e7,$e8
-        defb    $ea,$ec,$ed,$ef,$f1,$f2,$f3,$f5
-        defb    $f6,$f7,$f8,$f9,$fa,$fb,$fc,$fc
-        defb    $fd,$fe,$fe,$ff,$ff,$ff,$ff,$ff
-
-; LoadPatternTable loads 8 copies of the 32 tiles into the TMS9918 pattern table.
-LoadPatternTable:
-        ld      de, (TmsPatternAddr)
-        call    TmsWriteAddr
-        ld      b, PatternRepeats
-PatternRepeatLoop:
-        ld      hl, Patterns
-        ld      de, PatternLen
-PatternLoop:
-        ld      a, (hl)
-        call    TmsRamOut
-        inc     hl
-        dec     de
-        ld      a, d
-        or      e
-        jp      nz, PatternLoop
-        djnz    PatternRepeatLoop
-        ret
-
-; The TMS9918 tile mode defines 256 tile patterns, each of which is associated with a specific
-; foreground and background color. For palettes of 8 colors each, we can use 32 tiles per color,
-; so we only use every other tile the set of 64 tiles used in Produkthandler Kom Her on the C64. 
-; https://csdb.dk/release/?id=760
-
-Patterns:
-        defb    $00,$00,$00,$00,$00,$00,$00,$00
-        defb    $00,$00,$10,$00,$40,$00,$04,$00
-        defb    $00,$02,$10,$00,$40,$00,$04,$20
-        defb    $40,$02,$10,$02,$40,$00,$04,$20
-        defb    $40,$02,$10,$02,$40,$08,$05,$20
-        defb    $40,$02,$10,$0a,$40,$88,$05,$20
-        defb    $44,$02,$10,$0a,$41,$88,$05,$20
-        defb    $44,$02,$50,$0a,$41,$a8,$05,$20
-        defb    $44,$8a,$50,$0a,$41,$a8,$05,$20
-        defb    $44,$8a,$50,$0a,$51,$aa,$05,$20
-        defb    $54,$8a,$50,$0a,$51,$aa,$45,$20
-        defb    $54,$8a,$51,$0a,$51,$aa,$45,$28
-        defb    $55,$8a,$51,$2a,$51,$aa,$45,$28
-        defb    $55,$8a,$51,$2a,$55,$aa,$45,$2a
-        defb    $55,$8a,$55,$2a,$55,$aa,$45,$aa
-        defb    $55,$8a,$55,$aa,$55,$aa,$55,$aa
-        defb    $55,$aa,$55,$aa,$55,$aa,$55,$aa
-        defb    $55,$ba,$55,$aa,$55,$aa,$75,$aa
-        defb    $d5,$ba,$55,$aa,$d5,$aa,$75,$aa
-        defb    $d7,$ba,$55,$aa,$d5,$ae,$75,$aa
-        defb    $d7,$ba,$55,$ae,$d5,$ae,$75,$ab
-        defb    $df,$ba,$55,$ae,$f5,$ae,$75,$ab
-        defb    $df,$ba,$55,$ae,$f5,$af,$75,$bb
-        defb    $df,$fa,$55,$be,$f5,$af,$75,$bb
-        defb    $df,$fa,$57,$be,$f5,$af,$f5,$bb
-        defb    $df,$fa,$77,$be,$f5,$af,$fd,$bb
-        defb    $df,$fa,$77,$bf,$f5,$ef,$fd,$bb
-        defb    $df,$fa,$77,$bf,$fd,$ef,$fd,$bf
-        defb    $df,$fb,$f7,$bf,$fd,$ef,$fd,$bf
-        defb    $df,$fb,$ff,$bf,$fd,$ef,$fd,$ff
-        defb    $ff,$fb,$ff,$bf,$ff,$ef,$fd,$ff
-        defb    $ff,$fb,$ff,$ff,$ff,$ef,$ff,$ff
-PatternLen:     equ $ - Patterns
-NumPatterns:    equ PatternLen / 8
-PatternRepeats: equ 256 / NumPatterns
-ColorRepeats:   equ NumPatterns / 8
-PaletteLen:     equ 32 / ColorRepeats
-
-; RandomSeed sets the seed from four bytes in screen buffer data offset by refresh register.
-RandomSeed:
-        ld      hl, ScreenBuffer
-        ld      a, r
-        ld      d, 0
-        ld      e, a
-        add     hl, de
-        ld      b, 4
-        ld      de, Seed1
-RandomSeedLoop:
-        ld      a, (hl)
-        xor     l
-        ld      (de), a
-        inc     hl
-        inc     de
-        djnz    RandomSeedLoop
-        ret
-
-; RandomNumber generates a random number using combined LFSR/LCG PRNG with 16-bit seeds
-; https://wikiti.brandonw.net/index.php?title=Z80_Routines:Math:Random
-RandomNumber:
-        ld      hl, (Seed1)
-        ld      b, h
-        ld      c, l
-        add     hl, hl
-        add     hl, hl
-        inc     l
-        add     hl, bc
-        ld      (Seed1), hl
-        ld      hl, (Seed2)
-        add     hl, hl
-        sbc     a, a
-        and     %00101101
-        xor     l
-        ld      l, a
-        ld      (Seed2), hl
-        add     hl, bc
-        ret
-
-Seed1:
-        defw    0
-Seed2:
-        defw    0
-
-; RandomSeries generates series of random numbers
-; b = number of random numbers to generate
-; c = mask for random numbers
-; d = offset for random numbers
-RandomSeries:
-        push    bc
-        push    hl
-        call    RandomNumber
-        ld      a, l
-        or      a
-        pop     hl
-        pop     bc
-        call    m, RandomNeg
-        call    p, RandomPos
-        ld      (hl), a
-        inc     hl
-        djnz    RandomSeries
-        ret
-RandomPos:
-        and     c
-        add     a, d
-        ret
-RandomNeg:
-        and     c
-        add     a, d
-        cpl
-        inc     a
-        ret
+        include "sine.inc"
+        include "random.inc"
+        include "utility.inc"
 
 ; RandomParameters generates a complete set of random parameters
 RandomParameters:
@@ -670,7 +365,7 @@ RandomParameters:
         add     hl, de
         ld      (ColorPalette), hl
         call    CalcPlasmaStarts
-        jp      LoadColorTable
+        jp      LoadPalette
         
 ; select and initialize plasma effects
 DurationCnt:
@@ -710,7 +405,7 @@ InitEffect:
         ld      (DurationCnt), a
         
         call    CalcPlasmaStarts
-        call    LoadColorTable
+        call    LoadPalette
         ret
 
 ; PlasmaParams holds parameters for the current effect
@@ -728,7 +423,7 @@ PlasmaFreqs:
 CycleSpeed:
         defs    1
 ColorPalette:
-        defw    0
+        DefPointer    0
 PlasmaParamLen: equ $ - PlasmaParams
 
 ; PlasmaParamList contains pre-defined plasma parameters
@@ -739,7 +434,7 @@ PlasmaParamList:
         defb    $fe,$fc
         defb    $06,$07
         defb    $ff
-        defw    Pal01
+        DefPointer Pal01
 
         defb    $04,$05,$fc,$02,$fc,$03,$02,$01
         defb    $00,$01,$03,$fd,$02,$fd,$fe,$00
@@ -747,7 +442,7 @@ PlasmaParamList:
         defb    $fe,$fd
         defb    $08,$08
         defb    $f8
-        defw    Pal06
+        DefPointer Pal06
 
         defb    $f9,$06,$fe,$fa,$fa,$00,$07,$fb
         defb    $02,$01,$02,$03,$03,$00,$fd,$00
@@ -755,7 +450,7 @@ PlasmaParamList:
         defb    $fc,$fb
         defb    $09,$08
         defb    $fa
-        defw    Pal09
+        DefPointer Pal09
 
         defb    $00,$01,$03,$00,$01,$ff,$04,$fc
         defb    $01,$ff,$03,$fe,$fe,$03,$02,$02
@@ -763,7 +458,7 @@ PlasmaParamList:
         defb    $fe,$01
         defb    $07,$07
         defb    $08
-        defw    Pal0a
+        DefPointer Pal0a
 
         defb    $04,$04,$04,$fc,$fd,$04,$ff,$fc
         defb    $01,$02,$02,$01,$ff,$00,$ff,$01
@@ -771,7 +466,7 @@ PlasmaParamList:
         defb    $fd,$fe
         defb    $05,$06
         defb    $03
-        defw    Pal04
+        DefPointer Pal04
 
         defb    $fd,$fd,$fd,$02,$04,$00,$fd,$02
         defb    $03,$02,$fd,$02,$03,$fe,$ff,$ff
@@ -779,7 +474,7 @@ PlasmaParamList:
         defb    $fd,$ff
         defb    $07,$07
         defb    $f5
-        defw    Pal07
+        DefPointer Pal07
 
         defb    $fc,$00,$00,$ff,$04,$04,$00,$01
         defb    $fd,$03,$00,$02,$00,$03,$02,$03
@@ -787,7 +482,7 @@ PlasmaParamList:
         defb    $ff,$fe
         defb    $09,$03
         defb    $f8
-        defw    Pal05
+        DefPointer Pal05
 
         defb    $fd,$fc,$fe,$00,$00,$04,$fe,$01
         defb    $03,$03,$fe,$02,$00,$03,$fe,$00
@@ -795,7 +490,7 @@ PlasmaParamList:
         defb    $fd,$ff
         defb    $0a,$03
         defb    $fd
-        defw    Pal03
+        DefPointer Pal03
 
         defb    $fe,$00,$ff,$01,$04,$02,$fe,$fd
         defb    $02,$01,$fe,$01,$03,$ff,$03,$ff
@@ -803,7 +498,7 @@ PlasmaParamList:
         defb    $fc,$fd
         defb    $07,$06
         defb    $f8
-        defw    Pal0c
+        DefPointer Pal0c
 
         defb    $33,$04,$34,$fc,$dd,$24,$cf,$7c
         defb    $c1,$73,$02,$31,$fe,$a0,$ee,$01
@@ -811,7 +506,7 @@ PlasmaParamList:
         defb    $00,$00
         defb    $04,$01
         defb    $fd
-        defw    Pal00
+        DefPointer Pal00
 
         defb    $ff,$00,$01,$ff,$02,$fe,$00,$02
         defb    $ff,$02,$01,$02,$fe,$01,$00,$00
@@ -819,7 +514,7 @@ PlasmaParamList:
         defb    $fd,$fe
         defb    $03,$03
         defb    $f8
-        defw    Pal08
+        DefPointer Pal08
 
         defb    $02,$03,$fd,$fd,$01,$fc,$fd,$00
         defb    $01,$03,$fd,$fe,$fe,$03,$00,$00
@@ -827,85 +522,23 @@ PlasmaParamList:
         defb    $fc,$fd
         defb    $06,$05
         defb    $fa
-        defw    Pal0b
+        DefPointer Pal0b
 LastPlasmaParam:
 
 ; NextPalette changes to the next color palette
 NextPalette:
         ld      hl, (ColorPalette)
-        ld      de, PaletteLen
+        ld      de, ColorPaletteLength
         add     hl, de
         ld      (ColorPalette), hl
-        ld      de, LastPalette
+        ld      de, ColorPaletteEnd
         or      a
         sbc     hl, de
-        jp      c, LoadColorTable
+        jp      c, LoadPalette
         ld      hl, ColorPalettes
         ld      (ColorPalette), hl
         ; fallthrough
 
-; LoadColorTable sets up color table using current palette
-;
-; The color table in Graphics I mode consists of 32 bytes. Each byte defines two colors 
-; for 8 consecutive patterns in the pattern table.  The upper nybble defines the color
-; of the 1 bits and the lower nybble defines the color of the 0 bits. 
-;
-; For simplicity, palettes are stored with one color per byte, and the LoadColorTable 
-; routine combines each adjacent color into a single byte for the color table. Since 
-; we are using 8 colors and 32 tiles per color combination, we need to load each color
-; combination into the color table 4 times.
-LoadColorTable:
-        ld      de, (TmsColorAddr)
-        call    TmsWriteAddr
-        ld      hl, (ColorPalette)
-        ld      c, (hl)
-        ld      d, c
-        ld      e, PaletteLen-1
-AddColorLoop:
-        inc     hl
-        ld      a, (hl)
-        call    AddColors
-        ld      c, (hl)
-        dec     e
-        jp      nz, AddColorLoop
-        ld      a, d
-        ; fallthrough
-AddColors:
-        add     a, a
-        add     a, a
-        add     a, a
-        add     a, a
-        or      c
-        ld      b, ColorRepeats
-ColorRepeatLoop:
-        call    TmsRamOut
-        djnz    ColorRepeatLoop
-        ret
-
-; VIC-II to TMS9918 color mappings
-; compromises with no direct mapping are marked with #
-; vic:  $00,$01,$02,$03,$04,$05,$06,$07,$08,$09,$0a,$0b,$0c,$0d,$0e,$0f
-; tms:  $01,$0f,$06,$07,$0d,$0c,$04,$0b,$0a,#0A,#09,#01,$0e,$03,$05,#0E
-
-; palettes pre-mapped from vic to tms
-ColorPalettes:
-Pal00:  defb    $01,#01,$0e,#0e,$0f,#0e,$0e,#01
-Pal01:  defb    $01,$01,$01,$02,$02,$02,$01,$01
-Pal02:  defb    $03,$07,$05,$0d,$06,$0d,$05,$07
-Pal03:  defb    #06,$08,$0d,#01,$04,#01,$0d,$08
-Pal04:  defb    $04,#01,$0a,$08,$08,$08,$0a,#01
-Pal05:  defb    $08,$01,$04,$02,$02,$02,$04,$01
-Pal06:  defb    $04,#01,$06,$09,$0b,$09,$06,#01
-Pal07:  defb    $03,$07,$01,$0a,$06,$0a,$01,$07
-Pal08:  defb    $0f,$07,$05,$0d,$06,$0d,$05,$07
-Pal09:  defb    $03,$0c,#01,$0d,$09,$0d,#01,$0c
-Pal0a:  defb    $07,$05,#01,$06,$09,$06,#01,$05
-Pal0b:  defb    $09,$0d,$04,$05,$07,$05,$04,$0d
-Pal0c:  defb    $0b,$0a,#06,#01,$05,#01,#06,$0a
-Pal0d:  defb    $08,$09,$0b,$03,$07,$05,$04,$0d
-Pal0e:  defb    $01,$0c,$02,$03,$0f,$09,$08,$06
-Pal0f:  defb    $01,$04,$05,$07,$0f,$0b,$0a,$0d
-LastPalette:
 
 ; CalcPlasmaStarts calculates the initial value for each tile by summing together 8 sine waves of
 ; varying frequencies which combine to create the contours of a still image. Each sine wave is
@@ -955,7 +588,7 @@ SinePntsXLoop:
         inc     hl
         djnz    SinePntsXLoop           ; ... next sine wave
 
-        ld      h, SineTable >> 8
+        ld      hl, SineTable
         ld      de, SinePntsX
         xor     a                       ; initialize to zero
         ld      b, NumSinePnts          ; for each sine wave...
@@ -1003,7 +636,7 @@ CalcPlasmaFrame:
         ld      l, a
         add     a, d
         ld      (bc), a                   
-        ld      d, SineTable >> 8
+        ld      de, SineTable
         ld      e, h                    
         ld      h, d                    
         ld      bc, (PlasmaFreqs)       
@@ -1083,14 +716,8 @@ ColLoop:
 RetSrc:
         ret
 
-OldSP:
-        defw    0                
-
-        include "tms.inc"
-        include "z180.inc"
-        include "utility.inc"
-
-SineTable:      equ ($ + $ff) & $ff00          ; page align
+NextPage:       equ $ + $ff
+SineTable:      equ NextPage & PageMask         ; page align
 Stack:          equ SineTable + $200
 PlasmaStarts:   equ Stack
 ScreenBuffer:   equ PlasmaStarts + ScreenSize

@@ -1,0 +1,2158 @@
+PC     Output      Line
+040000             0001     ; Plasma Effect for Z80
+040000             0002     ; Copyright 2018-2024 J.B. Langston
+040000             0003     ;
+040000             0004     ; Permission is hereby granted, free of charge, to any person obtaining a
+040000             0005     ; copy of this software and associated documentation files (the "Software"),
+040000             0006     ; to deal in the Software without restriction, including without limitation
+040000             0007     ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+040000             0008     ; and/or sell copies of the Software, and to permit persons to whom the
+040000             0009     ; Software is furnished to do so, subject to the following conditions:
+040000             0010     ;
+040000             0011     ; The above copyright notice and this permission notice shall be included in
+040000             0012     ; all copies or substantial portions of the Software.
+040000             0013     ;
+040000             0014     ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+040000             0015     ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+040000             0016     ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+040000             0017     ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+040000             0018     ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+040000             0019     ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+040000             0020     ; DEALINGS IN THE SOFTWARE.
+040000             0021     
+040000             0022     
+040000             0023     ; Plascii Petsma by Cruzer/Camelot has one of the nicest looking plasma effects I've seen for
+040000             0024     ; the C64. Since he included the source code, I was able to port it to the Z80 and TMS9918.
+040000             0025     
+040000             0026     ; I have added the following interactive features of my own:
+040000             0027     ; - change the palette independent of the effect
+040000             0028     ; - hold a particular effect on screen indefinitely
+040000             0029     ; - switch immediately to a new effect
+040000             0030     ; - runtime generation of random effects
+040000             0031     ; - adjust parameters to customize an effect
+040000             0032     
+040000             0033     ; Before getting into a specific implementation, it helps to understand how plasma effects work
+040000             0034     ; in general. Rather than write another explanation when others have already done it well, I'll
+040000             0035     ; refer you to  this one, which covers the basic concepts using C code:
+040000             0036     ; https://lodev.org/cgtutor/plasma.html
+040000             0037     
+040000             0038     NumSinePnts:    equ 8
+040000             0039     
+040000             0040     ; uncomment ONLY ONE of these depending on the platform
+040000             0041             include "agon.inc"
+040000             0001*    ; VDP and MOS-specific routines for Plasma Generator on AgonLight, Agon Console8
+040000             0002*    ; Copyright 2018-2024 J.B. Langston
+040000             0003*    ;
+040000             0004*    ; Permission is hereby granted, free of charge, to any person obtaining a
+040000             0005*    ; copy of this software and associated documentation files (the "Software"),
+040000             0006*    ; to deal in the Software without restriction, including without limitation
+040000             0007*    ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+040000             0008*    ; and/or sell copies of the Software, and to permit persons to whom the
+040000             0009*    ; Software is furnished to do so, subject to the following conditions:
+040000             0010*    ;
+040000             0011*    ; The above copyright notice and this permission notice shall be included in
+040000             0012*    ; all copies or substantial portions of the Software.
+040000             0013*    ;
+040000             0014*    ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+040000             0015*    ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+040000             0016*    ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+040000             0017*    ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+040000             0018*    ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+040000             0019*    ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+040000             0020*    ; DEALINGS IN THE SOFTWARE.
+040000             0021*    
+040000             0022*    ScreenMode:     equ 0                           ; 640x480 16 colors
+040000             0023*    ScreenWidth:    equ 80
+040000             0024*    ScreenHeight:   equ 60
+040000             0025*    ScreenSize:     equ ScreenWidth*ScreenHeight
+040000             0026*    PageMask:       equ $ffff00                     ; 24-bit addresses
+040000             0027*    
+040000             0028*    ; convenience macros
+040000             0029*    
+040000             0030*        macro DefPointer addr
+040000             0031*            .dl addr
+040000             0032*        endmacro
+040000             0033*    
+040000             0034*    ; executable preamble
+040000             0035*    
+040000             0036*        .assume adl=1                           ; ez80 ADL memory mode
+040000             0037*        .org $40000                             ; load code here
+040000             0038*    
+040000 C3 45 00 04 0039*        jp Entry                                ; jump to start of code
+040004             0040*    
+040004 FF FF FF FF 0041*        .align 64                               ; MOS header
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+040040 4D 4F 53 00 0042*        .db "MOS",0,1
+       01          
+040045             0043*    
+040045             0044*    Entry:
+040045 F5          0045*        push af                                 ; store all the registers
+040046 C5          0046*        push bc
+040047 D5          0047*        push de
+040048 DD E5       0048*        push ix
+04004A FD E5       0049*        push iy
+04004C             0050*    
+04004C 0E 00       0051*        ld c, ScreenMode
+04004E CD 99 00 04 0052*        call VdpMode
+040052 C3 9B 03 04 0053*        jp Main
+040056             0054*    
+040056             0055*    Exit:
+040056 CD B1 00 04 0056*        call DefaultTextColor
+04005A FD E1       0057*        pop iy                                  ; pop all registers back from the stack
+04005C DD E1       0058*        pop ix
+04005E D1          0059*        pop de
+04005F C1          0060*        pop bc
+040060 F1          0061*        pop af
+040061 21 00 00 00 0062*        ld hl,0                                 ; load the MOS API return code (0) for no errors.
+040065 C9          0063*        ret                                     ; return to MOS
+040066             0064*    
+040066             0065*        include "mos.inc"
+040066             0001**   ; License: https://github.com/AgonConsole8/agon-mos/blob/main/LICENSE
+040066             0002**   ; Copyright (c) 2022 Dean Belfield
+040066             0003**   ;
+040066             0004**   ; Permission is hereby granted, free of charge, to any person obtaining a copy
+040066             0005**   ; of this software and associated documentation files (the "Software"), to deal
+040066             0006**   ; in the Software without restriction, including without limitation the rights
+040066             0007**   ; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+040066             0008**   ; copies of the Software, and to permit persons to whom the Software is
+040066             0009**   ; furnished to do so, subject to the following conditions:
+040066             0010**   ;
+040066             0011**   ; The above copyright notice and this permission notice shall be included in all
+040066             0012**   ; copies or substantial portions of the Software.
+040066             0013**   ;
+040066             0014**   ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+040066             0015**   ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+040066             0016**   ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+040066             0017**   ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+040066             0018**   ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+040066             0019**   ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+040066             0020**   ; SOFTWARE.
+040066             0021**   
+040066             0022**   ; Taken from https://github.com/AgonConsole8/agon-mos/blob/main/src/mos_api.inc on 2024-04-16
+040066             0023**   
+040066             0024**   ;
+040066             0025**   ; Title:        AGON MOS - API for user projects
+040066             0026**   ; Author:        Dean Belfield
+040066             0027**   ; Created:        03/08/2022
+040066             0028**   ; Last Updated:        11/11/2023
+040066             0029**   ;
+040066             0030**   ; Modinfo:
+040066             0031**   ; 05/08/2022:        Added mos_feof
+040066             0032**   ; 09/08/2022:        Added system variables: cursorX, cursorY
+040066             0033**   ; 18/08/2022:        Added system variables: scrchar, scrpixel, audioChannel, audioSuccess, vpd_pflags
+040066             0034**   ; 05/09/2022:        Added mos_ren, vdp_pflag_mode
+040066             0035**   ; 24/09/2022:        Added mos_getError, mos_mkdir
+040066             0036**   ; 13/10/2022:        Added mos_oscli
+040066             0037**   ; 23/02/2023:        Added more sysvars, fixed typo in sysvar_audioSuccess, offsets for sysvar_scrCols, sysvar_scrRows
+040066             0038**   ; 04/03/2023:        Added sysvar_scrpixelIndex
+040066             0039**   ; 08/03/2023:        Renamed sysvar_keycode to sysvar_keyascii, added sysvar_vkeycode
+040066             0040**   ; 15/03/2023:        Added mos_copy, mos_getrtc, mos_setrtc, rtc, vdp_pflag_rtc
+040066             0041**   ; 21/03/2023:        Added mos_setintvector, sysvars for keyboard status, vdu codes for vdp
+040066             0042**   ; 22/03/2023:        The VDP commands are now indexed from 0x80
+040066             0043**   ; 29/03/2023:        Added mos_uopen, mos_uclose, mos_ugetc, mos_uputc
+040066             0044**   ; 13/04/2023:        Added FatFS file structures (FFOBJID, FIL, DIR, FILINFO)
+040066             0045**   ; 15/04/2023:        Added mos_getfil, mos_fread, mos_fwrite and mos_flseek
+040066             0046**   ; 19/05/2023:        Added sysvar_scrMode
+040066             0047**   ; 05/06/2023:        Added sysvar_rtcEnable
+040066             0048**   ; 03/08/2023:        Added mos_setkbvector
+040066             0049**   ; 10/08/2023:        Added mos_getkbmap
+040066             0050**   ; 11/11/2023:        Added mos_i2c_open, mos_i2c_close, mos_i2c_write and mos_i2c_read
+040066             0051**   
+040066             0052**   ; Macro for calling the API
+040066             0053**   ; Parameters:
+040066             0054**   ; - function: One of the function numbers listed above
+040066             0055**       macro MosCall function
+040066             0056**           ld a, function
+040066             0057**           rst.lis $08
+040066             0058**       endmacro
+040066             0059**   
+040066             0060**   ; VDP control (VDU 23, 0, n)
+040066             0061**   ;
+040066             0062**   vdp_gp:                 EQU        80h
+040066             0063**   vdp_keycode:            EQU        81h
+040066             0064**   vdp_cursor:             EQU        82h
+040066             0065**   vdp_scrchar:            EQU        83h
+040066             0066**   vdp_scrpixel:           EQU        84h
+040066             0067**   vdp_audio:              EQU        85h
+040066             0068**   vdp_mode:               EQU        86h
+040066             0069**   vdp_rtc:                EQU        87h
+040066             0070**   vdp_keystate:           EQU        88h
+040066             0071**   vdp_logicalcoords:      EQU        C0h
+040066             0072**   vdp_terminalmode:       EQU        FFh
+040066             0073**   
+040066             0074**   ; MOS high level functions
+040066             0075**   ;
+040066             0076**   mos_getkey:             EQU        00h
+040066             0077**   mos_load:               EQU        01h
+040066             0078**   mos_save:               EQU        02h
+040066             0079**   mos_cd:                 EQU        03h
+040066             0080**   mos_dir:                EQU        04h
+040066             0081**   mos_del:                EQU        05h
+040066             0082**   mos_ren:                EQU        06h
+040066             0083**   mos_mkdir:              EQU        07h
+040066             0084**   mos_sysvars:            EQU        08h
+040066             0085**   mos_editline:           EQU        09h
+040066             0086**   mos_fopen:              EQU        0Ah
+040066             0087**   mos_fclose:             EQU        0Bh
+040066             0088**   mos_fgetc:              EQU        0Ch
+040066             0089**   mos_fputc:              EQU        0Dh
+040066             0090**   mos_feof:               EQU        0Eh
+040066             0091**   mos_getError:           EQU        0Fh
+040066             0092**   mos_oscli:              EQU        10h
+040066             0093**   mos_copy:               EQU        11h
+040066             0094**   mos_getrtc:             EQU        12h
+040066             0095**   mos_setrtc:             EQU        13h
+040066             0096**   mos_setintvector:       EQU        14h
+040066             0097**   mos_uopen:              EQU        15h
+040066             0098**   mos_uclose:             EQU        16h
+040066             0099**   mos_ugetc:              EQU        17h
+040066             0100**   mos_uputc:              EQU        18h
+040066             0101**   mos_getfil:             EQU        19h
+040066             0102**   mos_fread:              EQU        1Ah
+040066             0103**   mos_fwrite:             EQU        1Bh
+040066             0104**   mos_flseek:             EQU        1Ch
+040066             0105**   mos_setkbvector:        EQU        1Dh
+040066             0106**   mos_getkbmap:           EQU        1Eh
+040066             0107**   mos_i2c_open:           EQU        1Fh
+040066             0108**   mos_i2c_close:          EQU        20h
+040066             0109**   mos_i2c_write:          EQU        21h
+040066             0110**   mos_i2c_read:           EQU        22h
+040066             0111**   
+040066             0112**   
+040066             0113**   ; FatFS file access functions
+040066             0114**   ;
+040066             0115**   ffs_fopen:              EQU        80h
+040066             0116**   ffs_fclose:             EQU        81h
+040066             0117**   ffs_fread:              EQU        82h
+040066             0118**   ffs_fwrite:             EQU        83h
+040066             0119**   ffs_flseek:             EQU        84h
+040066             0120**   ffs_ftruncate:          EQU        85h
+040066             0121**   ffs_fsync:              EQU        86h
+040066             0122**   ffs_fforward:           EQU        87h
+040066             0123**   ffs_fexpand:            EQU        88h
+040066             0124**   ffs_fgets:              EQU        89h
+040066             0125**   ffs_fputc:              EQU        8Ah
+040066             0126**   ffs_fputs:              EQU        8Bh
+040066             0127**   ffs_fprintf:            EQU        8Ch
+040066             0128**   ffs_ftell:              EQU        8Dh
+040066             0129**   ffs_feof:               EQU        8Eh
+040066             0130**   ffs_fsize:              EQU        8Fh
+040066             0131**   ffs_ferror:             EQU        90h
+040066             0132**   
+040066             0133**   ; FatFS directory access functions
+040066             0134**   ;
+040066             0135**   ffs_dopen:              EQU        91h
+040066             0136**   ffs_dclose:             EQU        92h
+040066             0137**   ffs_dread:              EQU        93h
+040066             0138**   ffs_dfindfirst:         EQU        94h
+040066             0139**   ffs_dfindnext:          EQU        95h
+040066             0140**   
+040066             0141**   ; FatFS file and directory management functions
+040066             0142**   ;
+040066             0143**   ffs_stat:               EQU        96h
+040066             0144**   ffs_unlink:             EQU        97h
+040066             0145**   ffs_rename:             EQU        98h
+040066             0146**   ffs_chmod:              EQU        99h
+040066             0147**   ffs_utime:              EQU        9Ah
+040066             0148**   ffs_mkdir:              EQU        9Bh
+040066             0149**   ffs_chdir:              EQU        9Ch
+040066             0150**   ffs_chdrive:            EQU        9Dh
+040066             0151**   ffs_getcwd:             EQU        9Eh
+040066             0152**   
+040066             0153**   ; FatFS volume management and system configuration functions
+040066             0154**   ;
+040066             0155**   ffs_mount:              EQU        9Fh
+040066             0156**   ffs_mkfs:               EQU        A0h
+040066             0157**   ffs_fdisk:              EQU        A1h
+040066             0158**   ffs_getfree:            EQU        A2h
+040066             0159**   ffs_getlabel:           EQU        A3h
+040066             0160**   ffs_setlabel:           EQU        A4h
+040066             0161**   ffs_setcp:              EQU        A5h
+040066             0162**   
+040066             0163**   ; File access modes
+040066             0164**   ;
+040066             0165**   fa_read:                EQU        01h
+040066             0166**   fa_write:               EQU        02h
+040066             0167**   fa_open_existing:       EQU        00h
+040066             0168**   fa_create_new:          EQU        04h
+040066             0169**   fa_create_always:       EQU        08h
+040066             0170**   fa_open_always:         EQU        10h
+040066             0171**   fa_open_append:         EQU        30h
+040066             0172**   
+040066             0173**   ; System variable indexes for api_sysvars
+040066             0174**   ; Index into _sysvars in globals.asm
+040066             0175**   ;
+040066             0176**   sysvar_time:            EQU        00h        ; 4: Clock timer in centiseconds (incremented by 2 every VBLANK)
+040066             0177**   sysvar_vpd_pflags:      EQU        04h        ; 1: Flags to indicate completion of VDP commands
+040066             0178**   sysvar_keyascii:        EQU        05h        ; 1: ASCII keycode, or 0 if no key is pressed
+040066             0179**   sysvar_keymods:         EQU        06h        ; 1: Keycode modifiers
+040066             0180**   sysvar_cursorX:         EQU        07h        ; 1: Cursor X position
+040066             0181**   sysvar_cursorY:         EQU        08h        ; 1: Cursor Y position
+040066             0182**   sysvar_scrchar:         EQU        09h        ; 1: Character read from screen
+040066             0183**   sysvar_scrpixel:        EQU        0Ah        ; 3: Pixel data read from screen (R,B,G)
+040066             0184**   sysvar_audioChannel:    EQU        0Dh        ; 1: Audio channel
+040066             0185**   sysvar_audioSuccess:    EQU        0Eh        ; 1: Audio channel note queued (0 = no, 1 = yes)
+040066             0186**   sysvar_scrWidth:        EQU        0Fh        ; 2: Screen width in pixels
+040066             0187**   sysvar_scrHeight:       EQU        11h        ; 2: Screen height in pixels
+040066             0188**   sysvar_scrCols:         EQU        13h        ; 1: Screen columns in characters
+040066             0189**   sysvar_scrRows:         EQU        14h        ; 1: Screen rows in characters
+040066             0190**   sysvar_scrColours:      EQU        15h        ; 1: Number of colours displayed
+040066             0191**   sysvar_scrpixelIndex:   EQU        16h        ; 1: Index of pixel data read from screen
+040066             0192**   sysvar_vkeycode:        EQU        17h        ; 1: Virtual key code from FabGL
+040066             0193**   sysvar_vkeydown:        EQU        18h        ; 1: Virtual key state from FabGL (0=up, 1=down)
+040066             0194**   sysvar_vkeycount:       EQU        19h        ; 1: Incremented every time a key packet is received
+040066             0195**   sysvar_rtc:             EQU        1Ah        ; 6: Real time clock data
+040066             0196**   sysvar_spare:           EQU        20h        ; 2: Spare, previously used by rtc
+040066             0197**   sysvar_keydelay:        EQU        22h        ; 2: Keyboard repeat delay
+040066             0198**   sysvar_keyrate:         EQU        24h        ; 2: Keyboard repeat reat
+040066             0199**   sysvar_keyled:          EQU        26h        ; 1: Keyboard LED status
+040066             0200**   sysvar_scrMode:         EQU        27h        ; 1: Screen mode
+040066             0201**   sysvar_rtcEnable:       EQU        28h        ; 1: RTC enable flag (0: disabled, 1: use ESP32 RTC)
+040066             0202**   sysvar_mouseX:          EQU        29h        ; 2: Mouse X position
+040066             0203**   sysvar_mouseY:          EQU        2Bh        ; 2: Mouse Y position
+040066             0204**   sysvar_mouseButtons:    EQU        2Dh        ; 1: Mouse button state
+040066             0205**   sysvar_mouseWheel:      EQU        2Eh        ; 1: Mouse wheel delta
+040066             0206**   sysvar_mouseXDelta:     EQU        2Fh        ; 2: Mouse X delta
+040066             0207**   sysvar_mouseYDelta:     EQU        31h        ; 2: Mouse Y delta
+040066             0208**   
+040066             0209**   ; Flags for the VPD protocol
+040066             0210**   ;
+040066             0211**   vdp_pflag_cursor:       EQU        00000001b
+040066             0212**   vdp_pflag_scrchar:      EQU        00000010b
+040066             0213**   vdp_pflag_point:        EQU        00000100b
+040066             0214**   vdp_pflag_audio:        EQU        00001000b
+040066             0215**   vdp_pflag_mode:         EQU        00010000b
+040066             0216**   vdp_pflag_rtc:          EQU        00100000b
+040066             0217**   vdp_pflag_mouse:        EQU        01000000b
+040066             0218**   ; vdp_pflag_buffered:        EQU        10000000b
+040066             0219**   
+040066             0220**   ; commented out for compatiblitiy with ez80asm
+040066             0221**   
+040066             0222**   ;; FatFS structures
+040066             0223**   ;; These mirror the structures contained in src_fatfs/ff.h in the MOS project
+040066             0224**   ;;
+040066             0225**   ;; Object ID and allocation information (FFOBJID)
+040066             0226**   ;;
+040066             0227**   ;FFOBJID	.STRUCT
+040066             0228**   ;	fs:		DS	3	; Pointer to the hosting volume of this object
+040066             0229**   ;	id:		DS	2	; Hosting volume mount ID
+040066             0230**   ;	attr:		DS	1	; Object attribute
+040066             0231**   ;	stat:		DS	1	; Object chain status (b1-0: =0:not contiguous, =2:contiguous, =3:fragmented in this session, b2:sub-directory stretched)
+040066             0232**   ;	sclust:		DS	4	; Object data start cluster (0:no cluster or root directory)
+040066             0233**   ;	objsize:	DS	4	; Object size (valid when sclust != 0)
+040066             0234**   ;FFOBJID_SIZE .ENDSTRUCT FFOBJID
+040066             0235**   ;;
+040066             0236**   ;; File object structure (FIL)
+040066             0237**   ;;
+040066             0238**   ;FIL .STRUCT
+040066             0239**   ;	obj:		.TAG	FFOBJID	; Object identifier
+040066             0240**   ;	flag:		DS	1	; File status flags
+040066             0241**   ;	err:		DS	1	; Abort flag (error code)
+040066             0242**   ;	fptr:		DS	4	; File read/write pointer (Zeroed on file open)
+040066             0243**   ;	clust:		DS	4	; Current cluster of fpter (invalid when fptr is 0)
+040066             0244**   ;	sect:		DS	4	; Sector number appearing in buf[] (0:invalid)
+040066             0245**   ;	dir_sect:	DS	4	; Sector number containing the directory entry
+040066             0246**   ;	dir_ptr:	DS	3	; Pointer to the directory entry in the win[]
+040066             0247**   ;FIL_SIZE .ENDSTRUCT FIL
+040066             0248**   ;;
+040066             0249**   ;; Directory object structure (DIR)
+040066             0250**   ;;
+040066             0251**   ;DIR .STRUCT
+040066             0252**   ;	obj:		.TAG	FFOBJID	; Object identifier
+040066             0253**   ;	dptr:		DS	4	; Current read/write offset
+040066             0254**   ;	clust:		DS	4	; Current cluster
+040066             0255**   ;	sect:		DS	4	; Current sector (0:Read operation has terminated)
+040066             0256**   ;	dir:		DS	3	; Pointer to the directory item in the win[]
+040066             0257**   ;	fn:		DS	12	; SFN (in/out) {body[8],ext[3],status[1]}
+040066             0258**   ;	blk_ofs:	DS	4	; Offset of current entry block being processed (0xFFFFFFFF:Invalid)
+040066             0259**   ;DIR_SIZE .ENDSTRUCT DIR
+040066             0260**   ;;
+040066             0261**   ;; File information structure (FILINFO)
+040066             0262**   ;;
+040066             0263**   ;FILINFO .STRUCT
+040066             0264**   ;	fsize:		DS 	4	; File size
+040066             0265**   ;	fdate:		DS	2	; Modified date
+040066             0266**   ;	ftime:		DS	2	; Modified time
+040066             0267**   ;	fattrib:	DS	1	; File attribute
+040066             0268**   ;	altname:	DS	13	; Alternative file name
+040066             0269**   ;	fname:		DS	256	; Primary file name
+040066             0270**   ;FILINFO_SIZE .ENDSTRUCT FILINFO
+040066             0271**   
+040066             0272**   
+040066             0273**   ; wait for the next vertical sync
+040066             0274**   WaitVSync:
+040066 DD E5       0275**       push ix     			; wait for vblank interrupt
+040068             0276**       MosCall mos_sysvars		; fetch pointer to system variables
+040068 3E 08       0001**M          ld a, function
+04006A 49 CF       0002**M          rst.lis $08
+04006C 5B DD 7E 00 0277**       ld.lil a, (ix + sysvar_time + 0)
+040070             0278**   WaitVSyncLoop:
+040070 5B DD BE 00 0279**       cp.lil a, (ix + sysvar_time + 0)
+040074 28 FA       0280**       jr z, WaitVSyncLoop
+040076 DD E1       0281**       pop	ix
+040078 C9          0282**       ret
+040079             0283**   
+040079             0284**   ; get a key press in A
+040079             0285**   GetKey:
+040079             0286**       MosCall mos_getkey
+040079 3E 00       0001**M          ld a, function
+04007B 49 CF       0002**M          rst.lis $08
+04007D B7          0287**       or a
+04007E C9          0288**       ret
+04007F             0066*        include "vdu.inc"
+04007F             0001**   ; Agon VDU commands equates and convenience functions
+04007F             0002**   ; Copyright 2024 J.B. Langston
+04007F             0003**   ;
+04007F             0004**   ; Permission is hereby granted, free of charge, to any person obtaining a
+04007F             0005**   ; copy of this software and associated documentation files (the "Software"),
+04007F             0006**   ; to deal in the Software without restriction, including without limitation
+04007F             0007**   ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+04007F             0008**   ; and/or sell copies of the Software, and to permit persons to whom the
+04007F             0009**   ; Software is furnished to do so, subject to the following conditions:
+04007F             0010**   ;
+04007F             0011**   ; The above copyright notice and this permission notice shall be included in
+04007F             0012**   ; all copies or substantial portions of the Software.
+04007F             0013**   ;
+04007F             0014**   ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+04007F             0015**   ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+04007F             0016**   ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+04007F             0017**   ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+04007F             0018**   ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+04007F             0019**   ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+04007F             0020**   ; DEALINGS IN THE SOFTWARE.
+04007F             0021**   
+04007F             0022**   ; convenience macros
+04007F             0023**       macro SendByte value
+04007F             0024**           ld a, value
+04007F             0025**           rst.lil $10
+04007F             0026**       endmacro
+04007F             0027**   
+04007F             0028**       macro SendBytes addr, length
+04007F             0029**           ld hl, addr
+04007F             0030**           ld bc, length
+04007F             0031**           rst.lil $18
+04007F             0032**       endmacro
+04007F             0033**   
+04007F             0034**       macro SendString addr, term
+04007F             0035**           ld hl, addr
+04007F             0036**           ld bc, 0
+04007F             0037**           ld a, term
+04007F             0038**           rst.lil $18
+04007F             0039**       endmacro
+04007F             0040**   
+04007F             0041**   ; VDU commands: https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/
+04007F             0042**   VduNull: equ 0
+04007F             0043**   VduPrinterChar: equ 1
+04007F             0044**   VduPrinterOn: equ 2
+04007F             0045**   VduPrinterOff: equ 3
+04007F             0046**   VduTextCursor: equ 4
+04007F             0047**   VduGraphicsCursor: equ 5
+04007F             0048**   VduEnableScreen: equ 8
+04007F             0049**   VduBeep: equ 7
+04007F             0050**   VduCursorLeft: equ 8
+04007F             0051**   VduCursorRight: equ 9
+04007F             0052**   VduCursorDown: equ 10
+04007F             0053**   VduCursorUp: equ 11
+04007F             0054**   VduClearScreen: equ 12
+04007F             0055**   VduCarriageReturn: equ 13
+04007F             0056**   VduPageModeOn: equ 14
+04007F             0057**   VduPageModeOff: equ 15
+04007F             0058**   VduClearGraphics: equ 16
+04007F             0059**   VduTextColor: equ 17
+04007F             0060**   VduBackgroundColor: equ 128
+04007F             0061**   VduGraphicsColor: equ 18
+04007F             0062**   VduSetPalette: equ 19
+04007F             0063**   VduResetPalette: equ 20
+04007F             0064**   VduDisableScreen: equ 21
+04007F             0065**   VduSetMode: equ 22
+04007F             0066**   VduCustomChar: equ 23
+04007F             0067**   VduCommand: equ 23
+04007F             0068**   VduGraphicsViewport: equ 24
+04007F             0069**   VduPlot: equ 25
+04007F             0070**   VduResetViewports: equ 26
+04007F             0071**   VduOutputChar: equ 27
+04007F             0072**   VduTextViewport: equ 28
+04007F             0073**   VduGraphicsOrigin: equ 29
+04007F             0074**   VduCursorHome: equ 30
+04007F             0075**   VduCursorMove: equ 31
+04007F             0076**   VduBackspace: equ 127
+04007F             0077**   
+04007F             0078**   ; standard control characters
+04007F             0079**   CR:	    equ     0dh
+04007F             0080**   LF:	    equ     0ah
+04007F             0081**   EOS:    equ     0
+04007F             0082**   
+04007F             0083**   ; output a character
+04007F             0084**   ; A = character to output
+04007F             0085**   CharOut:
+04007F 5B D7       0086**       rst.lil $10
+040081 C9          0087**       ret
+040082             0088**   
+040082             0089**   ; output a string terminated by EOS
+040082             0090**   ; HL = address of string
+040082             0091**   StringOut:
+040082 01 00 00 00 0092**       ld bc, 0
+040086 3E 00       0093**       ld a, EOS
+040088 5B DF       0094**       rst.lil $18
+04008A C9          0095**       ret
+04008B             0096**   
+04008B             0097**   ; output a space
+04008B             0098**   Space:
+04008B             0099**       SendByte ' '
+04008B 3E 20       0001**M          ld a, value
+04008D 5B D7       0002**M          rst.lil $10
+04008F C9          0100**       ret
+040090             0101**   
+040090             0102**   ; output a new line
+040090             0103**   NewLine:
+040090             0104**       SendByte CR
+040090 3E 0D       0001**M          ld a, value
+040092 5B D7       0002**M          rst.lil $10
+040094             0105**       SendByte LF
+040094 3E 0A       0001**M          ld a, value
+040096 5B D7       0002**M          rst.lil $10
+040098 C9          0106**       ret
+040099             0107**   
+040099             0108**   ; set the VDP mode
+040099             0109**   ; C = mode number
+040099             0110**   VdpMode:
+040099             0111**       SendByte VduSetMode
+040099 3E 16       0001**M          ld a, value
+04009B 5B D7       0002**M          rst.lil $10
+04009D             0112**       SendByte c
+04009D 79          0001**M          ld a, value
+04009E 5B D7       0002**M          rst.lil $10
+0400A0 C9          0113**       ret
+0400A1             0114**   
+0400A1             0115**   ; clear the screen
+0400A1             0116**   ClearScreen:
+0400A1             0117**       SendByte VduClearScreen
+0400A1 3E 0C       0001**M          ld a, value
+0400A3 5B D7       0002**M          rst.lil $10
+0400A5 C9          0118**       ret
+0400A6             0119**   
+0400A6             0120**   ; move to X, Y coordinates
+0400A6             0121**   ; C = x coordinate
+0400A6             0122**   ; B = Y coordinate
+0400A6             0123**   MoveTo:
+0400A6             0124**       SendByte VduCursorMove
+0400A6 3E 1F       0001**M          ld a, value
+0400A8 5B D7       0002**M          rst.lil $10
+0400AA             0125**       SendByte c
+0400AA 79          0001**M          ld a, value
+0400AB 5B D7       0002**M          rst.lil $10
+0400AD             0126**       SendByte b
+0400AD 78          0001**M          ld a, value
+0400AE 5B D7       0002**M          rst.lil $10
+0400B0 C9          0127**       ret
+0400B1             0128**   
+0400B1             0129**   ; set default text color
+0400B1             0130**   DefaultTextColor:
+0400B1 06 00       0131**       ld b, 0                     ; white on black in default palette
+0400B3 0E 0F       0132**       ld c, 15
+0400B5             0133**       ; fallthrough
+0400B5             0134**   
+0400B5             0135**   ; set text color
+0400B5             0136**   ; C = pen (foreground) color
+0400B5             0137**   ; B = paper (background) color
+0400B5             0138**   TextColor:
+0400B5             0139**       SendByte VduTextColor       ; pen (foreground)
+0400B5 3E 11       0001**M          ld a, value
+0400B7 5B D7       0002**M          rst.lil $10
+0400B9             0140**       SendByte c
+0400B9 79          0001**M          ld a, value
+0400BA 5B D7       0002**M          rst.lil $10
+0400BC             0141**       SendByte VduTextColor       ; paper (background)
+0400BC 3E 11       0001**M          ld a, value
+0400BE 5B D7       0002**M          rst.lil $10
+0400C0 78          0142**       ld a, b
+0400C1 C6 80       0143**       add VduBackgroundColor
+0400C3 5B D7       0144**       rst.lil $10
+0400C5 C9          0145**       ret
+0400C6             0067*        include "gradient.inc"
+0400C6             0001**   ; AgonLight Gradient Demo
+0400C6             0002**   ; Copyright 2024 J.B. Langston
+0400C6             0003**   ;
+0400C6             0004**   ; Permission is hereby granted, free of charge, to any person obtaining a
+0400C6             0005**   ; copy of this software and associated documentation files (the "Software"),
+0400C6             0006**   ; to deal in the Software without restriction, including without limitation
+0400C6             0007**   ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+0400C6             0008**   ; and/or sell copies of the Software, and to permit persons to whom the
+0400C6             0009**   ; Software is furnished to do so, subject to the following conditions:
+0400C6             0010**   ;
+0400C6             0011**   ; The above copyright notice and this permission notice shall be included in
+0400C6             0012**   ; all copies or substantial portions of the Software.
+0400C6             0013**   ;
+0400C6             0014**   ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+0400C6             0015**   ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+0400C6             0016**   ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+0400C6             0017**   ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+0400C6             0018**   ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+0400C6             0019**   ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+0400C6             0020**   ; DEALINGS IN THE SOFTWARE.
+0400C6             0021**   
+0400C6             0022**   ; Credits:
+0400C6             0023**   ; - Gradient patterns from Produkthandler Kom Her by Camelot: https://csdb.dk/release/?id=760
+0400C6             0024**   ; - usg.asm lesson by Richard Turnnidge: https://github.com/richardturnnidge/lessons
+0400C6             0025**   
+0400C6             0026**       include "palettes.inc"
+0400C6             0001***  ; C64 Palette C64Palette values from https://www.c64-wiki.com/wiki/Color
+0400C6             0002***  C64Palette:
+0400C6 13 00 FF 00 0003***      .db 19, $0, $ff, $00,$00,$00    ; C64 colors
+       00 00       
+0400CC             0004***  C64PaletteStride:   equ $ - C64Palette
+0400CC 13 01 FF FF 0005***      .db 19, $1, $ff, $ff,$ff,$ff
+       FF FF       
+0400D2 13 02 FF 88 0006***      .db 19, $2, $ff, $88,$00,$00
+       00 00       
+0400D8 13 03 FF AA 0007***      .db 19, $3, $ff, $aa,$ff,$ee
+       FF EE       
+0400DE 13 04 FF CC 0008***      .db 19, $4, $ff, $cc,$44,$cc
+       44 CC       
+0400E4 13 05 FF 00 0009***      .db 19, $5, $ff, $00,$cc,$55
+       CC 55       
+0400EA 13 06 FF 00 0010***      .db 19, $6, $ff, $00,$00,$aa
+       00 AA       
+0400F0 13 07 FF EE 0011***      .db 19, $7, $ff, $ee,$ee,$77
+       EE 77       
+0400F6 13 08 FF DD 0012***      .db 19, $8, $ff, $dd,$88,$55
+       88 55       
+0400FC 13 09 FF 66 0013***      .db 19, $9, $ff, $66,$44,$00
+       44 00       
+040102 13 0A FF FF 0014***      .db 19, $a, $ff, $ff,$77,$77
+       77 77       
+040108 13 0B FF 33 0015***      .db 19, $b, $ff, $33,$33,$33
+       33 33       
+04010E 13 0C FF 77 0016***      .db 19, $c, $ff, $77,$77,$77
+       77 77       
+040114 13 0D FF AA 0017***      .db 19, $d, $ff, $aa,$ff,$66
+       FF 66       
+04011A 13 0E FF 00 0018***      .db 19, $e, $ff, $00,$88,$ff
+       88 FF       
+040120 13 0F FF BB 0019***      .db 19, $f, $ff, $bb,$bb,$bb
+       BB BB       
+040126             0020***  C64PaletteLength: equ $ - C64Palette
+040126             0021***  C64PaletteCount: equ C64PaletteLength / C64PaletteStride
+040126             0022***  
+040126             0023***  ; Predefined palettes from Plascii Petsma: https://csdb.dk/release/?id=159933
+040126             0024***  ColorPalettes:
+040126 00 0B 0C 0F 0025***  Pal00:  .db $0,$b,$c,$f,$1
+       01          
+04012B             0026***  ColorPaletteStride: equ $ - ColorPalettes
+04012B 00 00 00 05 0027***  Pal01:  .db $0,$0,$0,$5,$5
+       05          
+040130 0D 03 0E 04 0028***  Pal02:  .db $d,$3,$e,$4,$2
+       02          
+040135 09 02 04 0B 0029***  Pal03:  .db $9,$2,$4,$b,$6
+       06          
+04013A 06 0B 08 02 0030***  Pal04:  .db $6,$b,$8,$2,$2
+       02          
+04013F 0A 0C 0E 05 0031***  Pal05:  .db $a,$c,$e,$5,$5
+       05          
+040144 06 0B 08 0A 0032***  Pal06:  .db $6,$b,$8,$a,$7
+       07          
+040149 0D 03 0C 08 0033***  Pal07:  .db $d,$3,$c,$8,$2
+       02          
+04014E 01 03 0E 04 0034***  Pal08:  .db $1,$3,$e,$4,$2
+       02          
+040153 0D 05 0B 04 0035***  Pal09:  .db $d,$5,$b,$4,$a
+       0A          
+040158 03 0E 0B 08 0036***  Pal0a:  .db $3,$e,$b,$8,$a
+       0A          
+04015D 0A 04 06 0E 0037***  Pal0b:  .db $a,$4,$6,$e,$3
+       03          
+040162 0A 08 09 0B 0038***  Pal0c:  .db $a,$8,$9,$b,$e
+       0E          
+040167             0039***  ColorPaletteEnd:    equ $
+040167             0040***  ColorPaletteLength: equ $ - ColorPalettes
+040167             0041***  ColorPaletteCount:  equ ColorPaletteLength / ColorPaletteStride
+040167             0027**       include "patterns.inc"
+040167             0001***  ; Gradient patterns from Produkthandler Kom Her by Camelot: https://csdb.dk/release/?id=760
+040167             0002***  
+040167             0003***  Gradient:
+040167 17 00 00 00 0004***      .db 23,0, $00,$00,$00,$00,$00,$00,$00,$00
+       00 00 00 00 
+       00 00       
+040171             0005***  GradientStride: equ $ - Gradient
+040171             0006***      ;db 23,0, $00,$00,$08,$00,$00,$00,$04,$00
+040171 17 00 00 00 0007***      .db 23,0, $00,$00,$10,$00,$40,$00,$04,$00
+       10 00 40 00 
+       04 00       
+04017B             0008***      ;db 23,0, $00,$02,$10,$00,$40,$00,$04,$00
+04017B 17 00 00 02 0009***      .db 23,0, $00,$02,$10,$00,$40,$00,$04,$20
+       10 00 40 00 
+       04 20       
+040185             0010***      ;db 23,0, $00,$02,$10,$02,$40,$00,$04,$20
+040185 17 00 40 02 0011***      .db 23,0, $40,$02,$10,$02,$40,$00,$04,$20
+       10 02 40 00 
+       04 20       
+04018F             0012***      ;db 23,0, $40,$02,$10,$02,$40,$08,$04,$20
+04018F 17 00 40 02 0013***      .db 23,0, $40,$02,$10,$02,$40,$08,$05,$20
+       10 02 40 08 
+       05 20       
+040199             0014***      ;db 23,0, $40,$02,$10,$02,$40,$88,$05,$20
+040199 17 00 40 02 0015***      .db 23,0, $40,$02,$10,$0a,$40,$88,$05,$20
+       10 0A 40 88 
+       05 20       
+0401A3             0016***      ;db 23,0, $44,$02,$10,$0a,$40,$88,$05,$20
+0401A3 17 00 44 02 0017***      .db 23,0, $44,$02,$10,$0a,$41,$88,$05,$20
+       10 0A 41 88 
+       05 20       
+0401AD             0018***      ;db 23,0, $44,$02,$50,$0a,$41,$88,$05,$20
+0401AD 17 00 44 02 0019***      .db 23,0, $44,$02,$50,$0a,$41,$a8,$05,$20
+       50 0A 41 A8 
+       05 20       
+0401B7             0020***      ;db 23,0, $44,$0a,$50,$0a,$41,$a8,$05,$20
+0401B7 17 00 44 8A 0021***      .db 23,0, $44,$8a,$50,$0a,$41,$a8,$05,$20
+       50 0A 41 A8 
+       05 20       
+0401C1             0022***      ;db 23,0, $44,$8a,$50,$0a,$41,$aa,$05,$20
+0401C1 17 00 44 8A 0023***      .db 23,0, $44,$8a,$50,$0a,$51,$aa,$05,$20
+       50 0A 51 AA 
+       05 20       
+0401CB             0024***      ;db 23,0, $44,$8a,$50,$0a,$51,$aa,$45,$20
+0401CB 17 00 54 8A 0025***      .db 23,0, $54,$8a,$50,$0a,$51,$aa,$45,$20
+       50 0A 51 AA 
+       45 20       
+0401D5             0026***      ;db 23,0, $54,$8a,$51,$0a,$51,$aa,$45,$20
+0401D5 17 00 54 8A 0027***      .db 23,0, $54,$8a,$51,$0a,$51,$aa,$45,$28
+       51 0A 51 AA 
+       45 28       
+0401DF             0028***      ;db 23,0, $54,$8a,$51,$2a,$51,$aa,$45,$28
+0401DF 17 00 55 8A 0029***      .db 23,0, $55,$8a,$51,$2a,$51,$aa,$45,$28
+       51 2A 51 AA 
+       45 28       
+0401E9             0030***      ;db 23,0, $55,$8a,$51,$2a,$55,$aa,$45,$28
+0401E9 17 00 55 8A 0031***      .db 23,0, $55,$8a,$51,$2a,$55,$aa,$45,$2a
+       51 2A 55 AA 
+       45 2A       
+0401F3             0032***      ;db 23,0, $55,$8a,$55,$2a,$55,$aa,$45,$2a
+0401F3 17 00 55 8A 0033***      .db 23,0, $55,$8a,$55,$2a,$55,$aa,$45,$aa
+       55 2A 55 AA 
+       45 AA       
+0401FD             0034***      ;db 23,0, $55,$8a,$55,$aa,$55,$aa,$45,$aa
+0401FD 17 00 55 8A 0035***      .db 23,0, $55,$8a,$55,$aa,$55,$aa,$55,$aa
+       55 AA 55 AA 
+       55 AA       
+040207             0036***      ;db 23,0, $55,$aa,$55,$aa,$55,$aa,$55,$aa
+040207 17 00 55 AA 0037***      .db 23,0, $55,$aa,$55,$aa,$55,$aa,$55,$aa
+       55 AA 55 AA 
+       55 AA       
+040211             0038***      ;db 23,0, $55,$aa,$55,$aa,$55,$aa,$75,$aa
+040211 17 00 55 BA 0039***      .db 23,0, $55,$ba,$55,$aa,$55,$aa,$75,$aa
+       55 AA 55 AA 
+       75 AA       
+04021B             0040***      ;db 23,0, $55,$ba,$55,$aa,$d5,$aa,$75,$aa
+04021B 17 00 D5 BA 0041***      .db 23,0, $d5,$ba,$55,$aa,$d5,$aa,$75,$aa
+       55 AA D5 AA 
+       75 AA       
+040225             0042***      ;db 23,0, $d5,$ba,$55,$aa,$d5,$ae,$75,$aa
+040225 17 00 D7 BA 0043***      .db 23,0, $d7,$ba,$55,$aa,$d5,$ae,$75,$aa
+       55 AA D5 AE 
+       75 AA       
+04022F             0044***      ;db 23,0, $d7,$ba,$55,$ae,$d5,$ae,$75,$aa
+04022F 17 00 D7 BA 0045***      .db 23,0, $d7,$ba,$55,$ae,$d5,$ae,$75,$ab
+       55 AE D5 AE 
+       75 AB       
+040239             0046***      ;db 23,0, $d7,$ba,$55,$ae,$f5,$ae,$75,$ab
+040239 17 00 DF BA 0047***      .db 23,0, $df,$ba,$55,$ae,$f5,$ae,$75,$ab
+       55 AE F5 AE 
+       75 AB       
+040243             0048***      ;db 23,0, $df,$ba,$55,$ae,$f5,$af,$75,$ab
+040243 17 00 DF BA 0049***      .db 23,0, $df,$ba,$55,$ae,$f5,$af,$75,$bb
+       55 AE F5 AF 
+       75 BB       
+04024D             0050***      ;db 23,0, $df,$fa,$55,$ae,$f5,$af,$75,$bb
+04024D 17 00 DF FA 0051***      .db 23,0, $df,$fa,$55,$be,$f5,$af,$75,$bb
+       55 BE F5 AF 
+       75 BB       
+040257             0052***      ;db 23,0, $df,$fa,$57,$be,$f5,$af,$75,$bb
+040257 17 00 DF FA 0053***      .db 23,0, $df,$fa,$57,$be,$f5,$af,$f5,$bb
+       57 BE F5 AF 
+       F5 BB       
+040261             0054***      ;db 23,0, $df,$fa,$57,$be,$f5,$af,$fd,$bb
+040261 17 00 DF FA 0055***      .db 23,0, $df,$fa,$77,$be,$f5,$af,$fd,$bb
+       77 BE F5 AF 
+       FD BB       
+04026B             0056***      ;db 23,0, $df,$fa,$77,$be,$f5,$ef,$fd,$bb
+04026B 17 00 DF FA 0057***      .db 23,0, $df,$fa,$77,$bf,$f5,$ef,$fd,$bb
+       77 BF F5 EF 
+       FD BB       
+040275             0058***      ;db 23,0, $df,$fa,$77,$bf,$f5,$ef,$fd,$bf
+040275 17 00 DF FA 0059***      .db 23,0, $df,$fa,$77,$bf,$fd,$ef,$fd,$bf
+       77 BF FD EF 
+       FD BF       
+04027F             0060***      ;db 23,0, $df,$fa,$f7,$bf,$fd,$ef,$fd,$bf
+04027F 17 00 DF FB 0061***      .db 23,0, $df,$fb,$f7,$bf,$fd,$ef,$fd,$bf
+       F7 BF FD EF 
+       FD BF       
+040289             0062***      ;db 23,0, $df,$fb,$ff,$bf,$fd,$ef,$fd,$bf
+040289 17 00 DF FB 0063***      .db 23,0, $df,$fb,$ff,$bf,$fd,$ef,$fd,$ff
+       FF BF FD EF 
+       FD FF       
+040293             0064***      ;db 23,0, $df,$fb,$ff,$bf,$ff,$ef,$fd,$ff
+040293 17 00 FF FB 0065***      .db 23,0, $ff,$fb,$ff,$bf,$ff,$ef,$fd,$ff
+       FF BF FF EF 
+       FD FF       
+04029D             0066***      ;db 23,0, $ff,$fb,$ff,$bf,$ff,$ef,$ff,$ff
+04029D 17 00 FF FB 0067***      .db 23,0, $ff,$fb,$ff,$ff,$ff,$ef,$ff,$ff
+       FF FF FF EF 
+       FF FF       
+0402A7             0068***      ;db 23,0, $ff,$ff,$ff,$ff,$ff,$ef,$ff,$ff
+0402A7             0069***  GradientLength: equ $ - Gradient
+0402A7             0070***  GradientCount: equ GradientLength / GradientStride
+0402A7             0071***  GradientStart: equ 128
+0402A7             0028**   
+0402A7             0029**   ; Send all the tiles in the screen buffer
+0402A7             0030**   SendScreenBuffer:
+0402A7             0031**       SendByte VduCursorHome
+0402A7 3E 1E       0001**M          ld a, value
+0402A9 5B D7       0002**M          rst.lil $10
+0402AB 21 C0 22 04 0032**       ld hl, ScreenBuffer
+0402AF 11 C0 12 00 0033**       ld de, ScreenSize
+0402B3             0034**   SendScreenBufferLoop:
+0402B3 7E          0035**       ld a, (hl)
+0402B4 E5          0036**       push hl
+0402B5 CD 44 03 04 0037**       call ShowTile
+0402B9 E1          0038**       pop hl
+0402BA 1B          0039**       dec de
+0402BB C2 B3 02 04 0040**       jp nz, SendScreenBufferLoop
+0402BF C9          0041**       ret
+0402C0             0042**   
+0402C0             0043**   ; Load Gradient characters into VDU
+0402C0             0044**   LoadGradient:
+0402C0 21 67 01 04 0045**       ld hl, Gradient
+0402C4 23          0046**       inc hl                      ; start at second byte of first character
+0402C5 11 0A 00 00 0047**       ld de, GradientStride
+0402C9 3E 80       0048**       ld a, GradientStart
+0402CB 06 20       0049**       ld b, GradientCount
+0402CD             0050**   LoadGradientLoop:
+0402CD 77          0051**       ld (hl), a                  ; set character number
+0402CE 3C          0052**       inc a                       ; increment character number
+0402CF 19          0053**       add hl, de
+0402D0 10 FB       0054**       djnz LoadGradientLoop
+0402D2 21 67 01 04 0055**       ld hl, Gradient
+0402D6 01 40 01 00 0056**       ld bc, GradientLength
+0402DA 5B DF       0057**       rst.lil $18
+0402DC C9          0058**       ret
+0402DD             0059**   
+0402DD             0060**   LoadPalette:
+0402DD DD 2A 63 0A 0061**       ld ix, (ColorPalette)
+       04          
+0402E2             0062**       ; fallthrough
+0402E2             0063**   
+0402E2             0064**   ; Load a Plascii-style palette into the color lookup table
+0402E2             0065**   ; IX = address of palette to load
+0402E2             0066**   LoadColorLookup:
+0402E2 11 83 03 04 0067**       ld de, ColorLookup
+0402E6 06 04       0068**       ld b, 4
+0402E8             0069**   LoadColorLookupAsc:             ; load colors into lookup in ascending order
+0402E8 DD 7E 01    0070**       ld a, (ix+1)
+0402EB 12          0071**       ld (de), a
+0402EC 13          0072**       inc de
+0402ED DD 7E 00    0073**       ld a, (ix+0)
+0402F0 C6 80       0074**       add 128
+0402F2 12          0075**       ld (de), a
+0402F3 13          0076**       inc de
+0402F4 DD 23       0077**       inc ix
+0402F6 10 F0       0078**       djnz LoadColorLookupAsc
+0402F8 06 04       0079**       ld b, 4
+0402FA             0080**   LoadColorLookupDesc:            ; load colors into lookup in descending order
+0402FA DD 7E FF    0081**       ld a, (ix-1)
+0402FD 12          0082**       ld (de), a
+0402FE 13          0083**       inc de
+0402FF DD 7E 00    0084**       ld a, (ix+0)
+040302 C6 80       0085**       add 128
+040304 12          0086**       ld (de), a
+040305 13          0087**       inc de
+040306 DD 2B       0088**       dec ix
+040308 10 F0       0089**       djnz LoadColorLookupDesc
+04030A C9          0090**       ret
+04030B             0091**   
+04030B             0092**   ; Output gradients for all the palettes one after another to demonstrate them
+04030B             0093**   ShowPalettes:
+04030B 21 C6 00 04 0094**       ld hl, C64Palette
+04030F 01 60 00 00 0095**       ld bc, C64PaletteLength
+040313 5B DF       0096**       rst.lil $18
+040315 DD 21 26 01 0097**       ld ix, ColorPalettes
+       04          
+04031A 06 0D       0098**       ld b, ColorPaletteCount
+04031C             0099**   ShowPalettesLoop:
+04031C DD E5       0100**       push ix
+04031E C5          0101**       push bc
+04031F CD E2 02 04 0102**       call LoadColorLookup
+040323 CD 36 03 04 0103**       call ShowGradient
+040327 CD 90 00 04 0104**       call NewLine
+04032B C1          0105**       pop bc
+04032C DD E1       0106**       pop ix
+04032E 11 05 00 00 0107**       ld de, ColorPaletteStride
+040332 DD 19       0108**       add ix, de
+040334 10 E6       0109**       djnz ShowPalettesLoop
+040336             0110**   
+040336             0111**   ; Display a gradient to showcase the current palette
+040336             0112**   ShowGradient:
+040336 3E 00       0113**       ld a, 0
+040338             0114**   ShowGradientLoop:
+040338 F5          0115**       push af
+040339 CD 44 03 04 0116**       call ShowTile
+04033D F1          0117**       pop af
+04033E 3C          0118**       inc a
+04033F C2 38 03 04 0119**       jp nz, ShowGradientLoop
+040343 C9          0120**       ret
+040344             0121**   
+040344             0122**   ; Show the appropriate gradient tile with the appropriate pen and paper color
+040344             0123**   ; A = tile number
+040344             0124**   ShowTile:
+040344 F5          0125**       push af
+040345 E6 1F       0126**       and GradientCount - 1   ; bottom bits select the character
+040347 C6 80       0127**       add GradientStart       ; plus starting character
+040349 32 98 03 04 0128**       ld (TileChar), a        ; save tile character
+04034D F1          0129**       pop af
+04034E E6 E0       0130**       and 256 - GradientCount ; top bits select the colors
+040350 0F          0131**       rrca                    ; shift into correct positon
+040351 0F          0132**       rrca
+040352 0F          0133**       rrca
+040353 0F          0134**       rrca
+040354 21 93 03 04 0135**       ld hl, CurrentColor
+040358 BE          0136**       cp (hl)                 ; check if this tile is already using the current color
+040359 C2 64 03 04 0137**       jp nz, ShowTileColor    ; if not, output color control codes
+04035D 3A 98 03 04 0138**       ld a, (TileChar)        ; if so, just output the character
+040361 5B D7       0139**       rst.lil $10
+040363 C9          0140**       ret
+040364             0141**   ShowTileColor:
+040364 77          0142**       ld (hl), a              ; save the current logical color
+040365 21 83 03 04 0143**       ld hl, ColorLookup      ; look up the pen and paper color based on logical color
+040369 06 00       0144**       ld b, 0
+04036B 4F          0145**       ld c, a
+04036C 09          0146**       add hl, bc
+04036D 7E          0147**       ld a, (hl)
+04036E 32 95 03 04 0148**       ld (TilePen), a         ; save them in the buffer
+040372 23          0149**       inc hl
+040373 7E          0150**       ld a, (hl)
+040374 32 97 03 04 0151**       ld (TilePaper), a
+040378             0152**       SendBytes TileBuffer, TileBufferLength  ; send the tile buffer to the VDP
+040378 21 94 03 04 0001**M          ld hl, addr
+04037C 01 05 00 00 0002**M          ld bc, length
+040380 5B DF       0003**M          rst.lil $18
+040382 C9          0153**       ret
+040383             0154**   
+040383             0155**   ColorLookup:
+040383 FF FF FF FF 0156**       .ds 16
+       FF FF FF FF 
+       FF FF FF FF 
+       FF FF FF FF 
+040393             0157**   CurrentColor:
+040393 FF          0158**       .db $ff                 ; ff is never a valid logical color
+040394             0159**   TileBuffer:
+040394 11          0160**       .db VduTextColor
+040395             0161**   TilePen:
+040395 0F          0162**       .db 15                  ; white in default palette
+040396 11          0163**       .db VduTextColor
+040397             0164**   TilePaper:
+040397 80          0165**       .db VduBackgroundColor  ; black in defualt palette
+040398             0166**   TileChar:
+040398 80          0167**       .db GradientStart
+040399             0168**   TileBufferLength: equ $ - TileBuffer
+040399             0068*    
+040399             0069*    
+040399             0070*    EnableInterrupt:
+040399 C9          0071*        ret                     ; no interrupt needed on Agon
+04039A             0072*    
+04039A             0073*    ShowHelp:
+04039A C9          0074*        ret                     ; figure out how to do this later
+04039B             0042             ;include "rcmsx.inc"
+04039B             0043     
+04039B             0044     Main:
+04039B CD 0F 09 04 0045             call    RandomSeed
+04039F CD A8 08 04 0046             call    MakeSineTable
+0403A3 CD D3 0C 04 0047             call    MakeSpeedCode
+0403A7 CD C0 02 04 0048             call    LoadGradient
+0403AB CD 16 0A 04 0049             call    FirstEffect
+0403AF CD 99 03 04 0050             call    EnableInterrupt
+0403B3             0051     
+0403B3             0052     MainLoop:
+0403B3 3A AF 07 04 0053             ld      a, (HoldEffect)
+0403B7 B7          0054             or      a
+0403B8 C2 C5 03 04 0055             jp      nz, NoEffectCycle
+0403BC 21 F2 09 04 0056             ld      hl, DurationCnt
+0403C0 35          0057             dec     (hl)
+0403C1 CC F5 09 04 0058             call    z, NextEffect
+0403C5             0059     NoEffectCycle:
+0403C5 3A B0 07 04 0060             ld      a, (StopAnimation)
+0403C9 B7          0061             or      a
+0403CA             0062             ;call    z, CalcPlasmaFrame
+0403CA             0063             ;call    WaitVSync
+0403CA CD A7 02 04 0064             call    SendScreenBuffer
+0403CE             0065             ;call    GetKey
+0403CE             0066             ;jp      z, MainLoop
+0403CE             0067             ;call    ProcessCommand
+0403CE             0068             ;jp      MainLoop
+0403CE C3 56 00 04 0069             jp      Exit
+0403D2             0070     
+0403D2             0071     About:
+0403D2 50 6C 61 73 0072             defb    "Plasma for Z80 Computers", CR, LF
+       6D 61 20 66 
+       6F 72 20 5A 
+       38 30 20 43 
+       6F 6D 70 75 
+       74 65 72 73 
+       0D 0A       
+0403EC 5A 38 30 20 0073             defb    "Z80 Code by J.B. Langston", CR, LF, CR, LF
+       43 6F 64 65 
+       20 62 79 20 
+       4A 2E 42 2E 
+       20 4C 61 6E 
+       67 73 74 6F 
+       6E 0D 0A 0D 
+       0A          
+040409 43 6F 6C 6F 0074             defb    "Color Palettes and Sine Routines ported from "
+       72 20 50 61 
+       6C 65 74 74 
+       65 73 20 61 
+       6E 64 20 53 
+       69 6E 65 20 
+       52 6F 75 74 
+       69 6E 65 73 
+       20 70 6F 72 
+       74 65 64 20 
+       66 72 6F 6D 
+       20          
+040436 50 6C 61 73 0075             defb    "Plascii Petsma by Cruzer/Camelot", CR, LF
+       63 69 69 20 
+       50 65 74 73 
+       6D 61 20 62 
+       79 20 43 72 
+       75 7A 65 72 
+       2F 43 61 6D 
+       65 6C 6F 74 
+       0D 0A       
+040458 47 72 61 64 0076             defb    "Gradient Patterns ripped from "
+       69 65 6E 74 
+       20 50 61 74 
+       74 65 72 6E 
+       73 20 72 69 
+       70 70 65 64 
+       20 66 72 6F 
+       6D 20       
+040476 50 72 6F 64 0077             defb    "Produkthandler Kom Her by Cruzer/Camelot", CR, LF, CR, LF
+       75 6B 74 68 
+       61 6E 64 6C 
+       65 72 20 4B 
+       6F 6D 20 48 
+       65 72 20 62 
+       79 20 43 72 
+       75 7A 65 72 
+       2F 43 61 6D 
+       65 6C 6F 74 
+       0D 0A 0D 0A 
+0404A2 50 72 65 73 0078             defb    "Press 'q' to quit, '?' for help.", CR, LF, EOS
+       73 20 27 71 
+       27 20 74 6F 
+       20 71 75 69 
+       74 2C 20 27 
+       3F 27 20 66 
+       6F 72 20 68 
+       65 6C 70 2E 
+       0D 0A 00    
+0404C5             0079     
+0404C5             0080     Help:
+0404C5 0D 0A 43 6F 0081             defb    CR, LF, "Commands:", CR, LF
+       6D 6D 61 6E 
+       64 73 3A 0D 
+       0A          
+0404D2 20 3F 20 20 0082             defb    " ?     help", CR, LF
+       20 20 20 68 
+       65 6C 70 0D 
+       0A          
+0404DF 20 71 20 20 0083             defb    " q     quit", CR, LF
+       20 20 20 71 
+       75 69 74 0D 
+       0A          
+0404EC 20 68 20 20 0084             defb    " h     hold current effect on/off", CR, LF
+       20 20 20 68 
+       6F 6C 64 20 
+       63 75 72 72 
+       65 6E 74 20 
+       65 66 66 65 
+       63 74 20 6F 
+       6E 2F 6F 66 
+       66 0D 0A    
+04050F 20 70 20 20 0085             defb    " p     switch palette", CR, LF
+       20 20 20 73 
+       77 69 74 63 
+       68 20 70 61 
+       6C 65 74 74 
+       65 0D 0A    
+040526 20 6E 20 20 0086             defb    " n     next effect", CR, LF
+       20 20 20 6E 
+       65 78 74 20 
+       65 66 66 65 
+       63 74 0D 0A 
+04053A 20 64 20 20 0087             defb    " d     default values", CR, LF
+       20 20 20 64 
+       65 66 61 75 
+       6C 74 20 76 
+       61 6C 75 65 
+       73 0D 0A    
+040551 20 61 20 20 0088             defb    " a     animation on/off", CR, LF
+       20 20 20 61 
+       6E 69 6D 61 
+       74 69 6F 6E 
+       20 6F 6E 2F 
+       6F 66 66 0D 
+       0A          
+04056A 20 72 20 20 0089             defb    " r     toggle random/playlist", CR, LF
+       20 20 20 74 
+       6F 67 67 6C 
+       65 20 72 61 
+       6E 64 6F 6D 
+       2F 70 6C 61 
+       79 6C 69 73 
+       74 0D 0A    
+040589 20 76 20 20 0090             defb    " v     view parameters", CR, LF, CR, LF
+       20 20 20 76 
+       69 65 77 20 
+       70 61 72 61 
+       6D 65 74 65 
+       72 73 0D 0A 
+       0D 0A       
+0405A3 50 61 72 61 0091             defb    "Parameter Selection:", CR, LF
+       6D 65 74 65 
+       72 20 53 65 
+       6C 65 63 74 
+       69 6F 6E 3A 
+       0D 0A       
+0405B9 20 78 20 20 0092             defb    " x     x increments", CR, LF
+       20 20 20 78 
+       20 69 6E 63 
+       72 65 6D 65 
+       6E 74 73 0D 
+       0A          
+0405CE 20 79 20 20 0093             defb    " y     y increments", CR, LF
+       20 20 20 79 
+       20 69 6E 63 
+       72 65 6D 65 
+       6E 74 73 0D 
+       0A          
+0405E3 20 69 20 20 0094             defb    " i     initial values", CR, LF
+       20 20 20 69 
+       6E 69 74 69 
+       61 6C 20 76 
+       61 6C 75 65 
+       73 0D 0A    
+0405FA 20 63 20 20 0095             defb    " c     linear animation speed", CR, LF
+       20 20 20 6C 
+       69 6E 65 61 
+       72 20 61 6E 
+       69 6D 61 74 
+       69 6F 6E 20 
+       73 70 65 65 
+       64 0D 0A    
+040619 20 73 20 20 0096             defb    " s     sine animation speeds", CR, LF
+       20 20 20 73 
+       69 6E 65 20 
+       61 6E 69 6D 
+       61 74 69 6F 
+       6E 20 73 70 
+       65 65 64 73 
+       0D 0A       
+040637 20 66 20 20 0097             defb    " f     distortion frequencies", CR, LF, CR, LF
+       20 20 20 64 
+       69 73 74 6F 
+       72 74 69 6F 
+       6E 20 66 72 
+       65 71 75 65 
+       6E 63 69 65 
+       73 0D 0A 0D 
+       0A          
+040658 50 61 72 61 0098             defb    "Parameter Modification:", CR, LF
+       6D 65 74 65 
+       72 20 4D 6F 
+       64 69 66 69 
+       63 61 74 69 
+       6F 6E 3A 0D 
+       0A          
+040671 20 31 2D 38 0099             defb    " 1-8   increment selected parameter (+ shift to decrement)", CR, LF
+       20 20 20 69 
+       6E 63 72 65 
+       6D 65 6E 74 
+       20 73 65 6C 
+       65 63 74 65 
+       64 20 70 61 
+       72 61 6D 65 
+       74 65 72 20 
+       28 2B 20 73 
+       68 69 66 74 
+       20 74 6F 20 
+       64 65 63 72 
+       65 6D 65 6E 
+       74 29 0D 0A 
+0406AD 20 30 20 20 0100             defb    " 0     clear selected parameters", CR, LF, EOS
+       20 20 20 63 
+       6C 65 61 72 
+       20 73 65 6C 
+       65 63 74 65 
+       64 20 70 61 
+       72 61 6D 65 
+       74 65 72 73 
+       0D 0A 00    
+0406D0             0101     
+0406D0             0102     ; command keys grouped by function
+0406D0             0103     Commands:
+0406D0 3F 71 68 70 0104             defb    "?qhpndavr0"
+       6E 64 61 76 
+       72 30       
+0406DA             0105     ModeSelectCommands:
+0406DA 78 79 69 73 0106             defb    "xyisfc"
+       66 63       
+0406E0             0107     IncDecCommands:
+0406E0 31 32 33 34 0108             defb    "12345678"
+       35 36 37 38 
+0406E8             0109     NumIncCommands: equ $ - IncDecCommands
+0406E8 21 40 23 24 0110             defb    "!@#$%^&*"
+       25 5E 26 2A 
+0406F0             0111     NumCommands:    equ $ - Commands
+0406F0             0112     
+0406F0             0113     ; pointers to command functions; must be 1-1 correspondence to commands
+0406F0             0114     CommandPointers:
+0406F0             0115             DefPointer    ShowHelp
+0406F0 9A 03 04    0001M            .dl addr
+0406F3             0116             DefPointer    Exit
+0406F3 56 00 04    0001M            .dl addr
+0406F6             0117             DefPointer    ToggleHold
+0406F6 CB 07 04    0001M            .dl addr
+0406F9             0118             DefPointer    NextPalette
+0406F9 E6 0B 04    0001M            .dl addr
+0406FC             0119             DefPointer    NextEffect
+0406FC F5 09 04    0001M            .dl addr
+0406FF             0120             DefPointer    InitEffect
+0406FF 1E 0A 04    0001M            .dl addr
+040702             0121             DefPointer    ToggleAnimation
+040702 BD 07 04    0001M            .dl addr
+040705             0122             DefPointer    ViewParameters
+040705 48 08 04    0001M            .dl addr
+040708             0123             DefPointer    ToggleRandomParams
+040708 B2 07 04    0001M            .dl addr
+04070B             0124             DefPointer    ClearParameters
+04070B D6 07 04    0001M            .dl addr
+04070E             0125     
+04070E             0126     ; pointers to parameters; must be 1-1 correspondence to mode select commands
+04070E             0127     ParameterPointers:
+04070E             0128             DefPointer    SineAddsX
+04070E 46 0A 04    0001M            .dl addr
+040711             0129             DefPointer    SineAddsY
+040711 4E 0A 04    0001M            .dl addr
+040714             0130             DefPointer    SineStartsY
+040714 56 0A 04    0001M            .dl addr
+040717             0131             DefPointer    SineSpeeds
+040717 5E 0A 04    0001M            .dl addr
+04071A             0132             DefPointer    PlasmaFreqs
+04071A 60 0A 04    0001M            .dl addr
+04071D             0133             DefPointer    CycleSpeed
+04071D 62 0A 04    0001M            .dl addr
+040720             0134             DefPointer    CycleSpeed+1
+040720 63 0A 04    0001M            .dl addr
+040723             0135     
+040723             0136     ; dispatch command key in a
+040723             0137     ProcessCommand:
+040723 21 D0 06 04 0138             ld      hl, Commands
+040727 06 20       0139             ld      b, NumCommands
+040729             0140     CheckCommandLoop:
+040729 BE          0141             cp      (hl)
+04072A CA 32 07 04 0142             jp      z, FoundCommandKey
+04072E 23          0143             inc     hl
+04072F 10 F8       0144             djnz    CheckCommandLoop
+040731 C9          0145             ret
+040732             0146     
+040732             0147     ; determine what category of command it is and handle appropriately
+040732             0148     FoundCommandKey:
+040732 11 E0 06 04 0149             ld      de, IncDecCommands
+040736 B7          0150             or      a
+040737 ED 52       0151             sbc     hl, de
+040739 D2 7C 07 04 0152             jp      nc, FoundIncDecCommand
+04073D 19          0153             add     hl, de
+04073E 11 DA 06 04 0154             ld      de, ModeSelectCommands
+040742 B7          0155             or      a
+040743 ED 52       0156             sbc     hl, de
+040745 D2 60 07 04 0157             jp      nc, FoundModeSelectCommand
+040749 19          0158             add     hl, de
+04074A 11 D0 06 04 0159             ld      de, Commands
+04074E B7          0160             or      a
+04074F ED 52       0161             sbc     hl, de
+040751 11 F0 06 04 0162             ld      de, CommandPointers
+040755 29          0163             add     hl, hl
+040756 19          0164             add     hl, de
+040757 7E          0165             ld      a, (hl)
+040758 23          0166             inc     hl
+040759 66          0167             ld      h, (hl)
+04075A 6F          0168             ld      l, a
+04075B E9          0169             jp      (hl)
+04075C             0170     
+04075C             0171     ; mode select command; set pointers to appropriate mode variables
+04075C             0172     SelectedParameter:
+04075C             0173             DefPointer    CycleSpeed
+04075C 62 0A 04    0001M            .dl addr
+04075F             0174     SelectedParameterLength:
+04075F 01          0175             defb    1
+040760             0176     
+040760             0177     FoundModeSelectCommand:
+040760 11 0E 07 04 0178             ld      de, ParameterPointers
+040764 29          0179             add     hl, hl
+040765 19          0180             add     hl, de
+040766 5E          0181             ld      e, (hl)
+040767 23          0182             inc     hl
+040768 56          0183             ld      d, (hl)
+040769 ED 53 5C 07 0184             ld      (SelectedParameter), de
+       04          
+04076E 23          0185             inc     hl
+04076F 7E          0186             ld      a, (hl)
+040770 23          0187             inc     hl
+040771 66          0188             ld      h, (hl)
+040772 6F          0189             ld      l, a
+040773 B7          0190             or      a
+040774 ED 52       0191             sbc     hl, de
+040776 7D          0192             ld      a, l
+040777 32 5F 07 04 0193             ld      (SelectedParameterLength), a
+04077B C9          0194             ret
+04077C             0195     
+04077C             0196     ; increment/decrement command; adjust selected variable
+04077C             0197     FoundIncDecCommand:
+04077C 7D          0198             ld      a, l
+04077D FE 08       0199             cp      NumIncCommands
+04077F F5          0200             push    af
+040780 E6 07       0201             and     7
+040782 6F          0202             ld      l, a
+040783 E5          0203             push    hl
+040784 21 5F 07 04 0204             ld      hl, SelectedParameterLength
+040788 BE          0205             cp      (hl)
+040789 E1          0206             pop     hl
+04078A D2 A9 07 04 0207             jp      nc, AbortChangeParameter
+04078E ED 5B 5C 07 0208             ld      de, (SelectedParameter)
+       04          
+040793 19          0209             add     hl, de
+040794 F1          0210             pop     af
+040795 DC AB 07 04 0211             call    c, IncParameter
+040799 D4 AD 07 04 0212             call    nc, DecParameter
+04079D 11 5E 0A 04 0213             ld      de, SineSpeeds
+0407A1 B7          0214             or      a
+0407A2 ED 52       0215             sbc     hl, de
+0407A4 DC 06 0C 04 0216             call    c, CalcPlasmaStarts
+0407A8 C9          0217             ret
+0407A9             0218     AbortChangeParameter:
+0407A9 F1          0219             pop     af
+0407AA C9          0220             ret
+0407AB             0221     IncParameter:
+0407AB 34          0222             inc     (hl)
+0407AC C9          0223             ret
+0407AD             0224     DecParameter:
+0407AD 35          0225             dec     (hl)
+0407AE C9          0226             ret
+0407AF             0227     
+0407AF             0228     ; feature toggles
+0407AF             0229     HoldEffect:
+0407AF 00          0230             defb    0
+0407B0             0231     StopAnimation:
+0407B0 00          0232             defb    0
+0407B1             0233     UseRandomParams:
+0407B1 00          0234             defb    0
+0407B2             0235     
+0407B2             0236     ToggleRandomParams:
+0407B2 3A B1 07 04 0237             ld      a, (UseRandomParams)
+0407B6 EE FF       0238             xor     $ff
+0407B8 32 B1 07 04 0239             ld      (UseRandomParams), a
+0407BC C9          0240             ret
+0407BD             0241     
+0407BD             0242     ToggleAnimation:
+0407BD 3A B0 07 04 0243             ld      a, (StopAnimation)
+0407C1 EE FF       0244             xor     $ff
+0407C3 32 B0 07 04 0245             ld      (StopAnimation), a
+0407C7 C3 69 0C 04 0246             jp      UpdateScreen
+0407CB             0247     
+0407CB             0248     ToggleHold:
+0407CB 3A AF 07 04 0249             ld      a, (HoldEffect)
+0407CF EE FF       0250             xor     $ff
+0407D1 32 AF 07 04 0251             ld      (HoldEffect), a
+0407D5 C9          0252             ret
+0407D6             0253     
+0407D6             0254     ; reset selected parameter values to 0
+0407D6             0255     ClearParameters:
+0407D6 2A 5C 07 04 0256             ld      hl, (SelectedParameter)
+0407DA 3A 5F 07 04 0257             ld      a, (SelectedParameterLength)
+0407DE 47          0258             ld      b, a
+0407DF AF          0259             xor     a
+0407E0             0260     ClearParameterLoop:
+0407E0 77          0261             ld      (hl), a
+0407E1 23          0262             inc     hl
+0407E2 10 FC       0263             djnz    ClearParameterLoop
+0407E4 C3 06 0C 04 0264             jp      CalcPlasmaStarts
+0407E8             0265     
+0407E8             0266     ; parameter display names
+0407E8             0267     SineAddsXMsg:
+0407E8 0D 0A 78 20 0268             defb CR, LF, "x increment: $"
+       69 6E 63 72 
+       65 6D 65 6E 
+       74 3A 20 24 
+0407F8             0269     SineAddsYMsg:
+0407F8 0D 0A 79 20 0270             defb CR, LF, "y increment: $"
+       69 6E 63 72 
+       65 6D 65 6E 
+       74 3A 20 24 
+040808             0271     SineStartsMsg:
+040808 0D 0A 69 6E 0272             defb CR, LF, "init values: $"
+       69 74 20 76 
+       61 6C 75 65 
+       73 3A 20 24 
+040818             0273     SineSpeedsMsg:
+040818 0D 0A 73 69 0274             defb CR, LF, "sine speeds: $"
+       6E 65 20 73 
+       70 65 65 64 
+       73 3A 20 24 
+040828             0275     PlasmaFreqMsg:
+040828 0D 0A 70 6C 0276             defb CR, LF, "plasma freq: $"
+       61 73 6D 61 
+       20 66 72 65 
+       71 3A 20 24 
+040838             0277     CycleSpeedMsg:
+040838 0D 0A 63 79 0278             defb CR, LF, "cycle speed: $"
+       63 6C 65 20 
+       73 70 65 65 
+       64 3A 20 24 
+040848             0279     
+040848             0280     ; display current parameter values
+040848             0281     ViewParameters:
+040848 21 46 0A 04 0282             ld      hl, PlasmaParams
+04084C 11 E8 07 04 0283             ld      de, SineAddsXMsg
+040850 CD 8D 08 04 0284             call    ShowSinePnts
+040854 11 F8 07 04 0285             ld      de, SineAddsYMsg
+040858 CD 8D 08 04 0286             call    ShowSinePnts
+04085C 11 08 08 04 0287             ld      de, SineStartsMsg
+040860 CD 8D 08 04 0288             call    ShowSinePnts
+040864 11 18 08 04 0289             ld      de, SineSpeedsMsg
+040868 CD 87 08 04 0290             call    ShowTwoParams
+04086C 11 28 08 04 0291             ld      de, PlasmaFreqMsg
+040870 CD 87 08 04 0292             call    ShowTwoParams
+040874 11 38 08 04 0293             ld      de, CycleSpeedMsg
+040878 CD 81 08 04 0294             call    ShowOneParam
+04087C CD 90 00 04 0295             call    NewLine
+040880 C9          0296             ret
+040881             0297     ShowOneParam:
+040881 06 01       0298             ld      b, 1
+040883 C3 8F 08 04 0299             jp      ShowBParams
+040887             0300     ShowTwoParams:
+040887 06 02       0301             ld      b, 2
+040889 C3 8F 08 04 0302             jp      ShowBParams
+04088D             0303     ShowSinePnts:
+04088D 06 08       0304             ld      b, NumSinePnts
+04088F             0305     ShowBParams:
+04088F E5          0306             push    hl
+040890 C5          0307             push    bc
+040891 CD 82 00 04 0308             call    StringOut
+040895 C1          0309             pop     bc
+040896 E1          0310             pop     hl
+040897             0311     ShowParameterLoop:
+040897 7E          0312             ld      a, (hl)
+040898 23          0313             inc     hl
+040899 E5          0314             push    hl
+04089A C5          0315             push    bc
+04089B CD 68 09 04 0316             call    HexOut
+04089F CD 8B 00 04 0317             call    Space
+0408A3 C1          0318             pop     bc
+0408A4 E1          0319             pop     hl
+0408A5 10 F0       0320             djnz    ShowParameterLoop
+0408A7 C9          0321             ret
+0408A8             0322     
+0408A8             0323             include "sine.inc"
+0408A8             0001*    ; Sine utilties
+0408A8             0002*    ; Copyright 2018-2024 J.B. Langston
+0408A8             0003*    ;
+0408A8             0004*    ; Permission is hereby granted, free of charge, to any person obtaining a
+0408A8             0005*    ; copy of this software and associated documentation files (the "Software"),
+0408A8             0006*    ; to deal in the Software without restriction, including without limitation
+0408A8             0007*    ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+0408A8             0008*    ; and/or sell copies of the Software, and to permit persons to whom the
+0408A8             0009*    ; Software is furnished to do so, subject to the following conditions:
+0408A8             0010*    ;
+0408A8             0011*    ; The above copyright notice and this permission notice shall be included in
+0408A8             0012*    ; all copies or substantial portions of the Software.
+0408A8             0013*    ;
+0408A8             0014*    ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+0408A8             0015*    ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+0408A8             0016*    ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+0408A8             0017*    ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+0408A8             0018*    ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+0408A8             0019*    ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+0408A8             0020*    ; DEALINGS IN THE SOFTWARE.
+0408A8             0021*    
+0408A8             0022*    ; Ported from 6502 Sine Routines from Plascii Petsma by Camelot
+0408A8             0023*    ; https://csdb.dk/release/?id=159933
+0408A8             0024*    
+0408A8             0025*    ; MakeSineTable builds the sine table for a complete period from a precalculated quarter period.
+0408A8             0026*    ; The first 64 values are copied verbatim from the precomputed values. The next 64 values are
+0408A8             0027*    ; flipped horizontally by copying them in reverse order. The last 128 values are flipped
+0408A8             0028*    ; vertically by complementing them. The vertically flipped values are written twice, first in
+0408A8             0029*    ; forward order, and then in reverse order to flip them horizontally and complete the period.
+0408A8             0030*    ; The resulting lookup table is 256 bytes long and stored on a 256-byte boundary so that a sine
+0408A8             0031*    ; value can be looked up by loading a single register with the input value.
+0408A8             0032*    
+0408A8             0033*    MakeSineTable:
+0408A8 01 CF 08 04 0034*            ld      bc, SineSrc             ; source values
+0408AC 11 00 0E 04 0035*            ld      de, SineTable           ; start of 1st quarter
+0408B0 21 7F 0E 04 0036*            ld      hl, SineTable+$7f       ; end of 2nd quarter
+0408B4 D9          0037*            exx
+0408B5 06 40       0038*            ld      b, $40                  ; counter
+0408B7 11 80 0E 04 0039*            ld      de, SineTable+$80       ; start of 3rd quarter
+0408BB 21 FF 0E 04 0040*            ld      hl, SineTable+$ff       ; end of 4th quarter
+0408BF             0041*    SineLoop:
+0408BF D9          0042*            exx
+0408C0 0A          0043*            ld      a, (bc)                 ; load source value
+0408C1 03          0044*            inc     bc
+0408C2 12          0045*            ld      (de), a                 ; store 1st quarter
+0408C3 13          0046*            inc     de
+0408C4 77          0047*            ld      (hl), a                 ; store 2nd quarter
+0408C5 2B          0048*            dec     hl                      ; in reverse order
+0408C6 D9          0049*            exx
+0408C7 2F          0050*            cpl                             ; flip vertically
+0408C8 12          0051*            ld      (de), a                 ; store 3rd quarter
+0408C9 13          0052*            inc     de
+0408CA 77          0053*            ld      (hl), a                 ; store 4th quarter
+0408CB 2B          0054*            dec     hl                      ; in reverse order
+0408CC 10 F1       0055*            djnz    SineLoop
+0408CE C9          0056*            ret
+0408CF             0057*    
+0408CF             0058*    ; Sine table contains pre-computed sine values converted to 8-bit integers.
+0408CF             0059*    ; Real sine values from -1 to 1 correspond to unsigned integers from 0 to 255.
+0408CF             0060*    ; The first quarter of the period is pre-computed using python script:
+0408CF             0061*    
+0408CF             0062*    ; #!/usr/bin/python3
+0408CF             0063*    ; import math
+0408CF             0064*    ; amp = 0xfe
+0408CF             0065*    ; for i in range(0, 0x40):
+0408CF             0066*    ;     sin = 2 + amp / 2 + amp * 0.499999 * math.sin(i / (0x100 / 2 / math.pi))
+0408CF             0067*    ;     if i & 7 == 0:
+0408CF             0068*    ;         print("defb    ", end="")
+0408CF             0069*    ;     print(hex(int(sin)).replace("0x", "$"), end="\n" if i & 7 == 7 else ",")
+0408CF             0070*    
+0408CF             0071*    SineSrc:
+0408CF 81 84 87 8A 0072*            defb    $81,$84,$87,$8a,$8d,$90,$93,$96
+       8D 90 93 96 
+0408D7 99 9C 9F A2 0073*            defb    $99,$9c,$9f,$a2,$a5,$a8,$ab,$ae
+       A5 A8 AB AE 
+0408DF B1 B4 B7 BA 0074*            defb    $b1,$b4,$b7,$ba,$bc,$bf,$c2,$c4
+       BC BF C2 C4 
+0408E7 C7 CA CC CF 0075*            defb    $c7,$ca,$cc,$cf,$d1,$d3,$d6,$d8
+       D1 D3 D6 D8 
+0408EF DA DC DF E1 0076*            defb    $da,$dc,$df,$e1,$e3,$e5,$e7,$e8
+       E3 E5 E7 E8 
+0408F7 EA EC ED EF 0077*            defb    $ea,$ec,$ed,$ef,$f1,$f2,$f3,$f5
+       F1 F2 F3 F5 
+0408FF F6 F7 F8 F9 0078*            defb    $f6,$f7,$f8,$f9,$fa,$fb,$fc,$fc
+       FA FB FC FC 
+040907 FD FE FE FF 0079*            defb    $fd,$fe,$fe,$ff,$ff,$ff,$ff,$ff
+       FF FF FF FF 
+04090F             0324             include "random.inc"
+04090F             0001*    ; Random number utilities
+04090F             0002*    ; Copyright 2018-2024 J.B. Langston
+04090F             0003*    ;
+04090F             0004*    ; Permission is hereby granted, free of charge, to any person obtaining a
+04090F             0005*    ; copy of this software and associated documentation files (the "Software"),
+04090F             0006*    ; to deal in the Software without restriction, including without limitation
+04090F             0007*    ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+04090F             0008*    ; and/or sell copies of the Software, and to permit persons to whom the
+04090F             0009*    ; Software is furnished to do so, subject to the following conditions:
+04090F             0010*    ;
+04090F             0011*    ; The above copyright notice and this permission notice shall be included in
+04090F             0012*    ; all copies or substantial portions of the Software.
+04090F             0013*    ;
+04090F             0014*    ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+04090F             0015*    ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+04090F             0016*    ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+04090F             0017*    ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+04090F             0018*    ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+04090F             0019*    ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+04090F             0020*    ; DEALINGS IN THE SOFTWARE.
+04090F             0021*    
+04090F             0022*    ; RandomSeed sets the seed from four bytes in screen buffer data offset by refresh register.
+04090F             0023*    RandomSeed:
+04090F 21 C0 22 04 0024*            ld      hl, ScreenBuffer
+040913 ED 5F       0025*            ld      a, r
+040915 16 00       0026*            ld      d, 0
+040917 5F          0027*            ld      e, a
+040918 19          0028*            add     hl, de
+040919 06 04       0029*            ld      b, 4
+04091B 11 45 09 04 0030*            ld      de, Seed1
+04091F             0031*    RandomSeedLoop:
+04091F 7E          0032*            ld      a, (hl)
+040920 AD          0033*            xor     l
+040921 12          0034*            ld      (de), a
+040922 23          0035*            inc     hl
+040923 13          0036*            inc     de
+040924 10 F9       0037*            djnz    RandomSeedLoop
+040926 C9          0038*            ret
+040927             0039*    
+040927             0040*    ; RandomNumber generates a random number using combined LFSR/LCG PRNG with 16-bit seeds
+040927             0041*    ; https://wikiti.brandonw.net/index.php?title=Z80_Routines:Math:Random
+040927             0042*    RandomNumber:
+040927 2A 45 09 04 0043*            ld      hl, (Seed1)
+04092B 44          0044*            ld      b, h
+04092C 4D          0045*            ld      c, l
+04092D 29          0046*            add     hl, hl
+04092E 29          0047*            add     hl, hl
+04092F 2C          0048*            inc     l
+040930 09          0049*            add     hl, bc
+040931 22 45 09 04 0050*            ld      (Seed1), hl
+040935 2A 47 09 04 0051*            ld      hl, (Seed2)
+040939 29          0052*            add     hl, hl
+04093A 9F          0053*            sbc     a, a
+04093B E6 2D       0054*            and     %00101101
+04093D AD          0055*            xor     l
+04093E 6F          0056*            ld      l, a
+04093F 22 47 09 04 0057*            ld      (Seed2), hl
+040943 09          0058*            add     hl, bc
+040944 C9          0059*            ret
+040945             0060*    
+040945             0061*    Seed1:
+040945 00 00       0062*            defw    0
+040947             0063*    Seed2:
+040947 00 00       0064*            defw    0
+040949             0065*    
+040949             0066*    ; RandomSeries generates series of random numbers
+040949             0067*    ; b = number of random numbers to generate
+040949             0068*    ; c = mask for random numbers
+040949             0069*    ; d = offset for random numbers
+040949             0070*    RandomSeries:
+040949 C5          0071*            push    bc
+04094A E5          0072*            push    hl
+04094B CD 27 09 04 0073*            call    RandomNumber
+04094F 7D          0074*            ld      a, l
+040950 B7          0075*            or      a
+040951 E1          0076*            pop     hl
+040952 C1          0077*            pop     bc
+040953 FC 63 09 04 0078*            call    m, RandomNeg
+040957 F4 60 09 04 0079*            call    p, RandomPos
+04095B 77          0080*            ld      (hl), a
+04095C 23          0081*            inc     hl
+04095D 10 EA       0082*            djnz    RandomSeries
+04095F C9          0083*            ret
+040960             0084*    RandomPos:
+040960 A1          0085*            and     c
+040961 82          0086*            add     a, d
+040962 C9          0087*            ret
+040963             0088*    RandomNeg:
+040963 A1          0089*            and     c
+040964 82          0090*            add     a, d
+040965 2F          0091*            cpl
+040966 3C          0092*            inc     a
+040967 C9          0093*            ret
+040968             0325             include "utility.inc"
+040968             0001*    ; Miscellaneuous utility functions
+040968             0002*    ; Copyright 2018-2024 J.B. Langston
+040968             0003*    ;
+040968             0004*    ; Permission is hereby granted, free of charge, to any person obtaining a
+040968             0005*    ; copy of this software and associated documentation files (the "Software"),
+040968             0006*    ; to deal in the Software without restriction, including without limitation
+040968             0007*    ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+040968             0008*    ; and/or sell copies of the Software, and to permit persons to whom the
+040968             0009*    ; Software is furnished to do so, subject to the following conditions:
+040968             0010*    ;
+040968             0011*    ; The above copyright notice and this permission notice shall be included in
+040968             0012*    ; all copies or substantial portions of the Software.
+040968             0013*    ;
+040968             0014*    ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+040968             0015*    ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+040968             0016*    ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+040968             0017*    ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+040968             0018*    ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+040968             0019*    ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+040968             0020*    ; DEALINGS IN THE SOFTWARE.
+040968             0021*    
+040968             0022*    ; CharOut must be defined elsewhere for these functions to work
+040968             0023*    
+040968             0024*    ; Output A in hexadecimal
+040968             0025*    HexOut:
+040968 F5          0026*            push    af
+040969 1F          0027*            rra
+04096A 1F          0028*            rra
+04096B 1F          0029*            rra
+04096C 1F          0030*            rra
+04096D CD 7E 09 04 0031*            call    HexNybble
+040971 CD 7F 00 04 0032*            call    CharOut
+040975 F1          0033*            pop     af
+040976 CD 7E 09 04 0034*            call    HexNybble
+04097A C3 7F 00 04 0035*            jp      CharOut
+04097E             0036*    
+04097E             0037*    ; convert lower nybble of A to hex (also in A)
+04097E             0038*    ; from http://map.grauw.nl/sources/external/z80bits.html#5.1
+04097E             0039*    HexNybble:
+04097E F6 F0       0040*            or      0f0h
+040980 27          0041*            daa
+040981 C6 A0       0042*            add     a, 0a0h
+040983 CE 40       0043*            adc     a, 40h
+040985 C9          0044*            ret
+040986             0326     
+040986             0327     ; RandomParameters generates a complete set of random parameters
+040986             0328     RandomParameters:
+040986 16 00       0329             ld      d, 0
+040988 0E 07       0330             ld      c, 7                    ; -8 to 7
+04098A 06 08       0331             ld      b, NumSinePnts
+04098C 21 46 0A 04 0332             ld      hl, SineAddsX
+040990 CD 49 09 04 0333             call    RandomSeries
+040994 0E 03       0334             ld      c, 3                    ; -4 to 3
+040996 06 08       0335             ld      b, NumSinePnts
+040998 21 4E 0A 04 0336             ld      hl, SineAddsY
+04099C CD 49 09 04 0337             call    RandomSeries
+0409A0 0E 7F       0338             ld      c, $7f                  ; -128 to 127
+0409A2 06 08       0339             ld      b, NumSinePnts
+0409A4 21 56 0A 04 0340             ld      hl, SineStartsY
+0409A8 CD 49 09 04 0341             call    RandomSeries
+0409AC 0E 03       0342             ld      c, 3                    ; -4 to 3
+0409AE 06 02       0343             ld      b, 2
+0409B0 21 5E 0A 04 0344             ld      hl, SineSpeeds
+0409B4 CD 49 09 04 0345             call    RandomSeries
+0409B8 0E 03       0346             ld      c, 3                    ; 1 to 8
+0409BA 16 05       0347             ld      d, 5
+0409BC 06 02       0348             ld      b, 2
+0409BE 21 60 0A 04 0349             ld      hl, PlasmaFreqs
+0409C2 CD 49 09 04 0350             call    RandomSeries
+0409C6 0E 07       0351             ld      c, 7                    ; -16 to -1
+0409C8 16 F8       0352             ld      d, -8
+0409CA 06 01       0353             ld      b, 1
+0409CC 21 62 0A 04 0354             ld      hl, CycleSpeed
+0409D0 CD 49 09 04 0355             call    RandomSeries
+0409D4 CD 27 09 04 0356             call    RandomNumber            ; randomly select palette
+0409D8 7D          0357             ld      a, l
+0409D9 E6 0F       0358             and     $f                      ; assumes 16 palettes of 8 colors each
+0409DB 26 00       0359             ld      h, 0
+0409DD 6F          0360             ld      l, a
+0409DE 29          0361             add     hl, hl
+0409DF 29          0362             add     hl, hl
+0409E0 29          0363             add     hl, hl
+0409E1 11 26 01 04 0364             ld      de, ColorPalettes
+0409E5 19          0365             add     hl, de
+0409E6 22 63 0A 04 0366             ld      (ColorPalette), hl
+0409EA CD 06 0C 04 0367             call    CalcPlasmaStarts
+0409EE C3 DD 02 04 0368             jp      LoadPalette
+0409F2             0369     
+0409F2             0370     ; select and initialize plasma effects
+0409F2             0371     DurationCnt:
+0409F2 00          0372             defb    0
+0409F3             0373     PlasmaParamPnt:
+0409F3 00 00       0374             defw    0
+0409F5             0375     
+0409F5             0376     NextEffect:
+0409F5 3A B1 07 04 0377             ld      a, (UseRandomParams)
+0409F9 B7          0378             or      a
+0409FA C2 86 09 04 0379             jp      nz, RandomParameters
+0409FE 2A F3 09 04 0380             ld      hl, (PlasmaParamPnt)
+040A02 11 20 00 00 0381             ld      de, PlasmaParamLen
+040A06 19          0382             add     hl, de
+040A07 22 F3 09 04 0383             ld      (PlasmaParamPnt), hl
+040A0B 11 E6 0B 04 0384             ld      de, LastPlasmaParam
+040A0F B7          0385             or      a
+040A10 ED 52       0386             sbc     hl, de
+040A12 DA 1E 0A 04 0387             jp      c, InitEffect
+040A16             0388             ; fallthrough
+040A16             0389     
+040A16             0390     FirstEffect:
+040A16 21 66 0A 04 0391             ld      hl, PlasmaParamList
+040A1A 22 F3 09 04 0392             ld      (PlasmaParamPnt), hl
+040A1E             0393             ; fallthrough
+040A1E             0394     
+040A1E             0395     InitEffect:
+040A1E 2A F3 09 04 0396             ld      hl, (PlasmaParamPnt)            ; copy parameters
+040A22 11 46 0A 04 0397             ld      de, PlasmaParams
+040A26 01 20 00 00 0398             ld      bc, PlasmaParamLen
+040A2A ED B0       0399             ldir
+040A2C             0400     
+040A2C AF          0401             xor     a                               ; reset counters
+040A2D 32 BE 0C 04 0402             ld      (PlasmaCnts), a
+040A31 32 BF 0C 04 0403             ld      (PlasmaCnts+1), a
+040A35 32 C0 0C 04 0404             ld      (CycleCnt), a
+040A39 32 F2 09 04 0405             ld      (DurationCnt), a
+040A3D             0406     
+040A3D CD 06 0C 04 0407             call    CalcPlasmaStarts
+040A41 CD DD 02 04 0408             call    LoadPalette
+040A45 C9          0409             ret
+040A46             0410     
+040A46             0411     ; PlasmaParams holds parameters for the current effect
+040A46             0412     PlasmaParams:
+040A46             0413     SineAddsX:
+040A46 FF FF FF FF 0414             defs    NumSinePnts
+       FF FF FF FF 
+040A4E             0415     SineAddsY:
+040A4E FF FF FF FF 0416             defs    NumSinePnts
+       FF FF FF FF 
+040A56             0417     SineStartsY:
+040A56 FF FF FF FF 0418             defs    NumSinePnts
+       FF FF FF FF 
+040A5E             0419     SineSpeeds:
+040A5E FF FF       0420             defs    2
+040A60             0421     PlasmaFreqs:
+040A60 FF FF       0422             defs    2
+040A62             0423     CycleSpeed:
+040A62 FF          0424             defs    1
+040A63             0425     ColorPalette:
+040A63             0426             DefPointer    0
+040A63 00 00 00    0001M            .dl addr
+040A66             0427     PlasmaParamLen: equ $ - PlasmaParams
+040A66             0428     
+040A66             0429     ; PlasmaParamList contains pre-defined plasma parameters
+040A66             0430     PlasmaParamList:
+040A66 FA 05 03 FA 0431             defb    $fa,$05,$03,$fa,$07,$04,$fe,$fe
+       07 04 FE FE 
+040A6E FE 01 FE 02 0432             defb    $fe,$01,$fe,$02,$03,$ff,$02,$02
+       03 FF 02 02 
+040A76 5E E8 EB 32 0433             defb    $5e,$e8,$eb,$32,$69,$4f,$0a,$41
+       69 4F 0A 41 
+040A7E FE FC       0434             defb    $fe,$fc
+040A80 06 07       0435             defb    $06,$07
+040A82 FF          0436             defb    $ff
+040A83             0437             DefPointer Pal01
+040A83 2B 01 04    0001M            .dl addr
+040A86             0438     
+040A86 04 05 FC 02 0439             defb    $04,$05,$fc,$02,$fc,$03,$02,$01
+       FC 03 02 01 
+040A8E 00 01 03 FD 0440             defb    $00,$01,$03,$fd,$02,$fd,$fe,$00
+       02 FD FE 00 
+040A96 51 A1 55 C1 0441             defb    $51,$a1,$55,$c1,$0d,$5a,$dd,$26
+       0D 5A DD 26 
+040A9E FE FD       0442             defb    $fe,$fd
+040AA0 08 08       0443             defb    $08,$08
+040AA2 F8          0444             defb    $f8
+040AA3             0445             DefPointer Pal06
+040AA3 44 01 04    0001M            .dl addr
+040AA6             0446     
+040AA6 F9 06 FE FA 0447             defb    $f9,$06,$fe,$fa,$fa,$00,$07,$fb
+       FA 00 07 FB 
+040AAE 02 01 02 03 0448             defb    $02,$01,$02,$03,$03,$00,$fd,$00
+       03 00 FD 00 
+040AB6 34 85 A6 11 0449             defb    $34,$85,$a6,$11,$89,$2b,$fa,$9c
+       89 2B FA 9C 
+040ABE FC FB       0450             defb    $fc,$fb
+040AC0 09 08       0451             defb    $09,$08
+040AC2 FA          0452             defb    $fa
+040AC3             0453             DefPointer Pal09
+040AC3 53 01 04    0001M            .dl addr
+040AC6             0454     
+040AC6 00 01 03 00 0455             defb    $00,$01,$03,$00,$01,$ff,$04,$fc
+       01 FF 04 FC 
+040ACE 01 FF 03 FE 0456             defb    $01,$ff,$03,$fe,$fe,$03,$02,$02
+       FE 03 02 02 
+040AD6 F3 02 0B 89 0457             defb    $f3,$02,$0b,$89,$8c,$d3,$23,$aa
+       8C D3 23 AA 
+040ADE FE 01       0458             defb    $fe,$01
+040AE0 07 07       0459             defb    $07,$07
+040AE2 08          0460             defb    $08
+040AE3             0461             DefPointer Pal0a
+040AE3 58 01 04    0001M            .dl addr
+040AE6             0462     
+040AE6 04 04 04 FC 0463             defb    $04,$04,$04,$fc,$fd,$04,$ff,$fc
+       FD 04 FF FC 
+040AEE 01 02 02 01 0464             defb    $01,$02,$02,$01,$ff,$00,$ff,$01
+       FF 00 FF 01 
+040AF6 3A 21 53 93 0465             defb    $3a,$21,$53,$93,$39,$b7,$26,$99
+       39 B7 26 99 
+040AFE FD FE       0466             defb    $fd,$fe
+040B00 05 06       0467             defb    $05,$06
+040B02 03          0468             defb    $03
+040B03             0469             DefPointer Pal04
+040B03 3A 01 04    0001M            .dl addr
+040B06             0470     
+040B06 FD FD FD 02 0471             defb    $fd,$fd,$fd,$02,$04,$00,$fd,$02
+       04 00 FD 02 
+040B0E 03 02 FD 02 0472             defb    $03,$02,$fd,$02,$03,$fe,$ff,$ff
+       03 FE FF FF 
+040B16 BC 99 5D 2F 0473             defb    $bc,$99,$5d,$2f,$e6,$16,$af,$0e
+       E6 16 AF 0E 
+040B1E FD FF       0474             defb    $fd,$ff
+040B20 07 07       0475             defb    $07,$07
+040B22 F5          0476             defb    $f5
+040B23             0477             DefPointer Pal07
+040B23 49 01 04    0001M            .dl addr
+040B26             0478     
+040B26 FC 00 00 FF 0479             defb    $fc,$00,$00,$ff,$04,$04,$00,$01
+       04 04 00 01 
+040B2E FD 03 00 02 0480             defb    $fd,$03,$00,$02,$00,$03,$02,$03
+       00 03 02 03 
+040B36 30 C7 07 60 0481             defb    $30,$c7,$07,$60,$36,$2b,$e8,$ec
+       36 2B E8 EC 
+040B3E FF FE       0482             defb    $ff,$fe
+040B40 09 03       0483             defb    $09,$03
+040B42 F8          0484             defb    $f8
+040B43             0485             DefPointer Pal05
+040B43 3F 01 04    0001M            .dl addr
+040B46             0486     
+040B46 FD FC FE 00 0487             defb    $fd,$fc,$fe,$00,$00,$04,$fe,$01
+       00 04 FE 01 
+040B4E 03 03 FE 02 0488             defb    $03,$03,$fe,$02,$00,$03,$fe,$00
+       00 03 FE 00 
+040B56 21 D7 34 1B 0489             defb    $21,$d7,$34,$1b,$5d,$eb,$8e,$7d
+       5D EB 8E 7D 
+040B5E FD FF       0490             defb    $fd,$ff
+040B60 0A 03       0491             defb    $0a,$03
+040B62 FD          0492             defb    $fd
+040B63             0493             DefPointer Pal03
+040B63 35 01 04    0001M            .dl addr
+040B66             0494     
+040B66 FE 00 FF 01 0495             defb    $fe,$00,$ff,$01,$04,$02,$fe,$fd
+       04 02 FE FD 
+040B6E 02 01 FE 01 0496             defb    $02,$01,$fe,$01,$03,$ff,$03,$ff
+       03 FF 03 FF 
+040B76 0B 0F EA 8C 0497             defb    $0b,$0f,$ea,$8c,$e0,$f8,$05,$0e
+       E0 F8 05 0E 
+040B7E FC FD       0498             defb    $fc,$fd
+040B80 07 06       0499             defb    $07,$06
+040B82 F8          0500             defb    $f8
+040B83             0501             DefPointer Pal0c
+040B83 62 01 04    0001M            .dl addr
+040B86             0502     
+040B86 33 04 34 FC 0503             defb    $33,$04,$34,$fc,$dd,$24,$cf,$7c
+       DD 24 CF 7C 
+040B8E C1 73 02 31 0504             defb    $c1,$73,$02,$31,$fe,$a0,$ee,$01
+       FE A0 EE 01 
+040B96 3A 21 53 93 0505             defb    $3a,$21,$53,$93,$39,$b7,$26,$99
+       39 B7 26 99 
+040B9E 00 00       0506             defb    $00,$00
+040BA0 04 01       0507             defb    $04,$01
+040BA2 FD          0508             defb    $fd
+040BA3             0509             DefPointer Pal00
+040BA3 26 01 04    0001M            .dl addr
+040BA6             0510     
+040BA6 FF 00 01 FF 0511             defb    $ff,$00,$01,$ff,$02,$fe,$00,$02
+       02 FE 00 02 
+040BAE FF 02 01 02 0512             defb    $ff,$02,$01,$02,$fe,$01,$00,$00
+       FE 01 00 00 
+040BB6 1D BB C5 A3 0513             defb    $1d,$bb,$c5,$a3,$ab,$6c,$ed,$a6
+       AB 6C ED A6 
+040BBE FD FE       0514             defb    $fd,$fe
+040BC0 03 03       0515             defb    $03,$03
+040BC2 F8          0516             defb    $f8
+040BC3             0517             DefPointer Pal08
+040BC3 4E 01 04    0001M            .dl addr
+040BC6             0518     
+040BC6 02 03 FD FD 0519             defb    $02,$03,$fd,$fd,$01,$fc,$fd,$00
+       01 FC FD 00 
+040BCE 01 03 FD FE 0520             defb    $01,$03,$fd,$fe,$fe,$03,$00,$00
+       FE 03 00 00 
+040BD6 69 AC 3B C1 0521             defb    $69,$ac,$3b,$c1,$fe,$21,$37,$84
+       FE 21 37 84 
+040BDE FC FD       0522             defb    $fc,$fd
+040BE0 06 05       0523             defb    $06,$05
+040BE2 FA          0524             defb    $fa
+040BE3             0525             DefPointer Pal0b
+040BE3 5D 01 04    0001M            .dl addr
+040BE6             0526     LastPlasmaParam:
+040BE6             0527     
+040BE6             0528     ; NextPalette changes to the next color palette
+040BE6             0529     NextPalette:
+040BE6 2A 63 0A 04 0530             ld      hl, (ColorPalette)
+040BEA 11 41 00 00 0531             ld      de, ColorPaletteLength
+040BEE 19          0532             add     hl, de
+040BEF 22 63 0A 04 0533             ld      (ColorPalette), hl
+040BF3 11 67 01 04 0534             ld      de, ColorPaletteEnd
+040BF7 B7          0535             or      a
+040BF8 ED 52       0536             sbc     hl, de
+040BFA DA DD 02 04 0537             jp      c, LoadPalette
+040BFE 21 26 01 04 0538             ld      hl, ColorPalettes
+040C02 22 63 0A 04 0539             ld      (ColorPalette), hl
+040C06             0540             ; fallthrough
+040C06             0541     
+040C06             0542     
+040C06             0543     ; CalcPlasmaStarts calculates the initial value for each tile by summing together 8 sine waves of
+040C06             0544     ; varying frequencies which combine to create the contours of a still image. Each sine wave is
+040C06             0545     ; defined by a StartAngle, RowFreq and ColFreq which are applied to each X, Y coordinate as:
+040C06             0546     ; StillFrame(x,y) = sum[n=1..8]: sin(StartAngle[n] + ColFreq[n] * x + RowFreq[n] * y)
+040C06             0547     
+040C06             0548     ; The calculation of the input angle for each X and Y coordinate is accomplished by successive
+040C06             0549     ; additions of the RowFreq and ColFreq values for to the respective RowAngle and ColAngle
+040C06             0550     ; accumulators.
+040C06             0551     CalcPlasmaStarts:
+040C06 21 56 0A 04 0552             ld      hl, SineStartsY         ; for each of 8 sine waves,
+040C0A 11 80 0C 04 0553             ld      de, SinePntsY           ; initialize SinePntsY to SineStartsY
+040C0E 01 08 00 00 0554             ld      bc, NumSinePnts
+040C12 ED B0       0555             ldir
+040C14 21 00 10 04 0556             ld      hl, PlasmaStarts
+040C18 0E 3C       0557             ld      c, ScreenHeight         ; for each row...
+040C1A             0558     YLoop:
+040C1A D9          0559             exx
+040C1B 01 80 0C 04 0560             ld      bc, SinePntsY
+040C1F 21 4E 0A 04 0561             ld      hl, SineAddsY
+040C23 11 78 0C 04 0562             ld      de, SinePntsX
+040C27 D9          0563             exx
+040C28 16 08       0564             ld      d, NumSinePnts
+040C2A             0565     SinePntsYLoop:
+040C2A D9          0566             exx                             ; for each sine wave...
+040C2B 0A          0567             ld      a, (bc)
+040C2C 86          0568             add     a, (hl)                 ; add SineAddsY to SinePntsY
+040C2D 02          0569             ld      (bc), a
+040C2E 12          0570             ld      (de), a                 ; initialize SinePntsX to SinePntsY
+040C2F 03          0571             inc     bc
+040C30 13          0572             inc     de
+040C31 23          0573             inc     hl
+040C32 D9          0574             exx
+040C33 15          0575             dec     d
+040C34 C2 2A 0C 04 0576             jp      nz, SinePntsYLoop       ; ... next sine wave
+040C38 06 50       0577             ld      b, ScreenWidth          ; for each column...
+040C3A             0578     XLoop:
+040C3A D9          0579             exx
+040C3B 11 78 0C 04 0580             ld      de, SinePntsX
+040C3F 21 46 0A 04 0581             ld      hl, SineAddsX
+040C43 06 08       0582             ld      b, NumSinePnts          ; for each sine wave...
+040C45             0583     SinePntsXLoop:
+040C45 1A          0584             ld      a, (de)
+040C46 86          0585             add     a, (hl)                 ; add SineAddsX to SinePntsX
+040C47 12          0586             ld      (de), a
+040C48 13          0587             inc     de
+040C49 23          0588             inc     hl
+040C4A 10 F9       0589             djnz    SinePntsXLoop           ; ... next sine wave
+040C4C             0590     
+040C4C 21 00 0E 04 0591             ld      hl, SineTable
+040C50 11 78 0C 04 0592             ld      de, SinePntsX
+040C54 AF          0593             xor     a                       ; initialize to zero
+040C55 06 08       0594             ld      b, NumSinePnts          ; for each sine wave...
+040C57             0595     SineAddLoop:
+040C57 08          0596             ex      af, af'
+040C58 1A          0597             ld      a, (de)                 ; look up SinePntsX in SineTable
+040C59 6F          0598             ld      l, a
+040C5A 08          0599             ex      af, af'
+040C5B 86          0600             add     a, (hl)                 ; accumulate values from SineTable
+040C5C 13          0601             inc     de
+040C5D 10 F8       0602             djnz    SineAddLoop             ; ...next sine wave
+040C5F D9          0603             exx
+040C60 77          0604             ld      (hl), a                 ; save accumulated value in PlasmaStarts
+040C61 23          0605             inc     hl
+040C62 10 D6       0606             djnz    XLoop                   ; ... next column
+040C64 0D          0607             dec     c
+040C65 C2 1A 0C 04 0608             jp      nz, YLoop               ; ... next row
+040C69             0609     UpdateScreen:
+040C69 21 00 10 04 0610             ld      hl, PlasmaStarts        ; transfer PlasmaStarts to screen buffer
+040C6D 11 C0 22 04 0611             ld      de, ScreenBuffer
+040C71 01 C0 12 00 0612             ld      bc, ScreenSize
+040C75 ED B0       0613             ldir
+040C77 C9          0614             ret
+040C78             0615     
+040C78             0616     SinePntsX:
+040C78 FF FF FF FF 0617             defs    NumSinePnts
+       FF FF FF FF 
+040C80             0618     SinePntsY:
+040C80 FF FF FF FF 0619             defs    NumSinePnts
+       FF FF FF FF 
+040C88             0620     
+040C88             0621     ; CalcPlasmaFrame applies distortion and color cycling effects to the original image StillFrame.
+040C88             0622     ;
+040C88             0623     ; For each frame, tiles are shifted based on LinearSpeed and two SineSpeeds.  In addition, each
+040C88             0624     ; row is warped by sine waves defined by two RowWarp parameters. For each row y of frame f, the
+040C88             0625     ; total offset applied to each tile of StillFrame is calcualted according to this formula:
+040C88             0626     ; D(f,y) = LinearSpeed * f + (sum [n=0..1]: sin(SineSpeed[n] * f + RowWarp[n] * y)) / 2
+040C88             0627     CalcPlasmaFrame:
+040C88 01 BE 0C 04 0628             ld      bc, PlasmaCnts
+040C8C ED 5B 5E 0A 0629             ld      de, (SineSpeeds)
+       04          
+040C91 0A          0630             ld      a, (bc)
+040C92 67          0631             ld      h, a
+040C93 83          0632             add     a, e
+040C94 02          0633             ld      (bc), a
+040C95 03          0634             inc     bc
+040C96 0A          0635             ld      a, (bc)
+040C97 6F          0636             ld      l, a
+040C98 82          0637             add     a, d
+040C99 02          0638             ld      (bc), a
+040C9A 11 00 0E 04 0639             ld      de, SineTable
+040C9E 5C          0640             ld      e, h
+040C9F 62          0641             ld      h, d
+040CA0 ED 4B 60 0A 0642             ld      bc, (PlasmaFreqs)
+       04          
+040CA5 D9          0643             exx
+040CA6 11 C0 0C 04 0644             ld      de, CycleCnt
+040CAA 1A          0645             ld      a, (de)
+040CAB 4F          0646             ld      c, a
+040CAC 21 62 0A 04 0647             ld      hl, CycleSpeed
+040CB0 86          0648             add     a, (hl)
+040CB1 12          0649             ld      (de), a
+040CB2 21 00 10 04 0650             ld      hl, PlasmaStarts
+040CB6 11 C0 22 04 0651             ld      de, ScreenBuffer
+040CBA C3 80 35 04 0652             jp      SpeedCode
+040CBE             0653     
+040CBE             0654     ; calculate new plasma frame from starting point and current counts
+040CBE             0655     PlasmaCnts:
+040CBE 00 00       0656             defw    0
+040CC0             0657     CycleCnt:
+040CC0 00          0658             defb    0
+040CC1             0659     
+040CC1             0660     ; setup for speedcode:
+040CC1             0661     ;       de  = pointer to first sine table entry
+040CC1             0662     ;       hl  = pointer to second sine table entry
+040CC1             0663     ;       c   = amount to increment first sine pointer between lines
+040CC1             0664     ;       b   = amount to increment second sine pointer between lines
+040CC1             0665     ;       c'  = current cycle count
+040CC1             0666     ;       b'  = offset to add to starting value for current row
+040CC1             0667     ;       hl' = pointer to starting plasma values
+040CC1             0668     ;       de' = pointer to screen back buffer
+040CC1             0669     ;       a   = temporary calculations
+040CC1             0670     
+040CC1             0671     RowSrc:
+040CC1 D9          0672             exx
+040CC2 7B          0673             ld      a, e
+040CC3 81          0674             add     a, c
+040CC4 5F          0675             ld      e, a
+040CC5 7D          0676             ld      a, l
+040CC6 80          0677             add     a, b
+040CC7 6F          0678             ld      l, a
+040CC8 1A          0679             ld      a, (de)
+040CC9 86          0680             add     a, (hl)
+040CCA 1F          0681             rra
+040CCB D9          0682             exx
+040CCC 89          0683             adc     a, c
+040CCD 47          0684             ld      b, a
+040CCE             0685     RowSrcLen:     equ $ - RowSrc
+040CCE             0686     
+040CCE             0687     ColSrc:
+040CCE 7E          0688             ld      a, (hl)
+040CCF 80          0689             add     a, b
+040CD0 12          0690             ld      (de), a
+040CD1 23          0691             inc     hl
+040CD2 13          0692             inc     de
+040CD3             0693     ColSrcLen:      equ $ - ColSrc
+040CD3             0694     
+040CD3             0695     ; build unrolled loops for speed
+040CD3             0696     MakeSpeedCode:
+040CD3 11 80 35 04 0697             ld      de, SpeedCode
+040CD7 3E 3C       0698             ld      a, ScreenHeight
+040CD9             0699     RowLoop:
+040CD9 21 C1 0C 04 0700             ld      hl, RowSrc
+040CDD 01 0D 00 00 0701             ld      bc, RowSrcLen
+040CE1 ED B0       0702             ldir
+040CE3 08          0703             ex      af, af'
+040CE4 3E 50       0704             ld      a, ScreenWidth
+040CE6             0705     ColLoop:
+040CE6 21 CE 0C 04 0706             ld      hl, ColSrc
+040CEA 01 05 00 00 0707             ld      bc, ColSrcLen
+040CEE ED B0       0708             ldir
+040CF0 3D          0709             dec     a
+040CF1 C2 E6 0C 04 0710             jp      nz, ColLoop
+040CF5 08          0711             ex      af, af'
+040CF6 3D          0712             dec     a
+040CF7 C2 D9 0C 04 0713             jp      nz, RowLoop
+040CFB 3A 00 0D 04 0714             ld      a, (RetSrc)
+040CFF 12          0715             ld      (de), a
+040D00             0716     RetSrc:
+040D00 C9          0717             ret
+040D01             0718     
+040D01             0719     NextPage:       equ $ + $ff
+040D01             0720     SineTable:      equ NextPage & PageMask         ; page align
+040D01             0721     Stack:          equ SineTable + $200
+040D01             0722     PlasmaStarts:   equ Stack
+040D01             0723     ScreenBuffer:   equ PlasmaStarts + ScreenSize
+040D01             0724     SpeedCode:      equ ScreenBuffer + ScreenSize

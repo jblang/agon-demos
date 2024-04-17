@@ -52,8 +52,6 @@ Entry:
     push ix
     push iy
 
-    ld c, ScreenMode
-    call VdpMode
     jp Main
 
 Exit:

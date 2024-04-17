@@ -26,6 +26,18 @@
     include "palettes.inc"
     include "patterns.inc"
 
+InitGraphics:
+    ld c, ScreenMode
+    call VdpMode
+    call LoadGradient
+    call LoadC64Palette
+    call DefaultTextColor
+    ret
+
+LoadC64Palette:
+    SendBytes C64Palette, C64PaletteLength
+    ret
+
 ; Send all the tiles in the screen buffer
 SendScreenBuffer:
     SendByte VduCursorHome
@@ -39,9 +51,10 @@ SendScreenBufferLoop:
     pop hl
     pop bc
     inc hl
-    djnz SendScreenBufferLoop
     dec c
-    jp nz, SendScreenBuffer
+    jp nz, SendScreenBufferLoop
+    dec b
+    jp nz, SendScreenBufferLoop
     ret
 
 ; Load Gradient characters into VDU
@@ -94,7 +107,6 @@ LoadColorLookupDesc:            ; load colors into lookup in descending order
 
 ; Output gradients for all the palettes one after another to demonstrate them
 ShowPalettes:
-    SendBytes C64Palette, C64PaletteLength
     ld ix, ColorPalettes
     ld b, ColorPaletteCount
 ShowPalettesLoop:

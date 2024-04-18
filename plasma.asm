@@ -35,13 +35,18 @@
 ; refer you to  this one, which covers the basic concepts using C code:
 ; https://lodev.org/cgtutor/plasma.html
 
-NumSinePnts:    equ 8
-
 ; uncomment ONLY ONE of these depending on the platform
         include "agon.inc"
         ;include "rcmsx.inc"
 
-Main:
+        include "utility.inc"
+
+NumSinePnts:    equ 8
+NumSineSpeeds:  equ 2
+NumPlasmaFreqs: equ 2
+NumCycleSpeeds: equ 1
+
+Main:                                   ; initialization tasks
         call    RandomSeed
         call    MakeSineTable
         call    MakeSpeedCode
@@ -49,7 +54,7 @@ Main:
         call    FirstEffect
         call    EnableInterrupt
 
-MainLoop:
+MainLoop:                               ; repetitive tasks
         ld      a, (HoldEffect)
         or      a
         jp      nz, NoEffectCycle
@@ -57,25 +62,33 @@ MainLoop:
         dec     (hl)
         call    z, NextEffect
 NoEffectCycle:
-        ld      a, (StopAnimation)
-        or      a
-        call    z, CalcPlasmaFrame
-        ;call    WaitVSync
+        call    CalcPlasmaFrame
+        call    WaitVSync
         call    SendScreenBuffer
-        ;call    GetKey
-        ;jp      z, MainLoop
-        ;call    ProcessCommand
+        call    GetKey
+        JumpIf  'q', Exit               ; must be handled from main
+        call    CheckCommand
         jp      MainLoop
-        jp      Exit
 
-About:
-        defb    "Plasma for Z80 Computers", CR, LF
-        defb    "Z80 Code by J.B. Langston", CR, LF, CR, LF
-        defb    "Color Palettes and Sine Routines ported from "
-        defb    "Plascii Petsma by Cruzer/Camelot", CR, LF
-        defb    "Gradient Patterns ripped from "
-        defb    "Produkthandler Kom Her by Cruzer/Camelot", CR, LF, CR, LF
-        defb    "Press 'q' to quit, '?' for help.", CR, LF, EOS
+CheckCommand:
+        JumpIf  '?', ShowHelp
+        JumpIf  'p', NextPalette
+        JumpIf  'h', ToggleHold
+        JumpIf  'n', NextEffect
+        JumpIf  'd', InitEffect
+        JumpIf  'a', ToggleAnimation
+        JumpIf  'r', ToggleRandomParams
+        JumpIf  'v', ViewParameters
+        JumpIf  'x', SelectSineAddsX
+        JumpIf  'y', SelectSineAddsY
+        JumpIf  'i', SelectSineStartsY
+        JumpIf  'c', SelectSineSpeeds
+        JumpIf  's', SelectPlasmaFreqs
+        JumpIf  'f', SelectCycleSpeed 
+        JumpIf  '0', ClearParameters
+        JumpIf  '>', IncSelected
+        JumpIf  '<', DecSelected
+        ret
 
 Help:
         defb    CR, LF, "Commands:", CR, LF
@@ -99,129 +112,65 @@ Help:
         defb    " 1-8   increment selected parameter (+ shift to decrement)", CR, LF
         defb    " 0     clear selected parameters", CR, LF, EOS
 
-; command keys grouped by function
-Commands:
-        defb    "?qhpndavr0"
-ModeSelectCommands:
-        defb    "xyisfc"
-IncDecCommands:
-        defb    "12345678"
-NumIncCommands: equ $ - IncDecCommands
-        defb    "!@#$%^&*"
-NumCommands:    equ $ - Commands
+; parameter selection
+SelectedParameter:
+        DefPointer SineAddsX
+SelectedParameterLength:
+        defb    NumSinePnts
+SelectedParameterNumber:
+        defb    0
 
-; pointers to command functions; must be 1-1 correspondence to commands
-CommandPointers:
-        DefPointer    ShowHelp
-        DefPointer    Exit
-        DefPointer    ToggleHold
-        DefPointer    NextPalette
-        DefPointer    NextEffect
-        DefPointer    InitEffect
-        DefPointer    ToggleAnimation
-        DefPointer    ViewParameters
-        DefPointer    ToggleRandomParams
-        DefPointer    ClearParameters
-
-; pointers to parameters; must be 1-1 correspondence to mode select commands
-ParameterPointers:
-        DefPointer    SineAddsX
-        DefPointer    SineAddsY
-        DefPointer    SineStartsY
-        DefPointer    SineSpeeds
-        DefPointer    PlasmaFreqs
-        DefPointer    CycleSpeed
-        DefPointer    CycleSpeed+1
-
-; dispatch command key in a
-ProcessCommand:
-        ld      hl, Commands
-        ld      b, NumCommands
-CheckCommandLoop:
+SelectParameterNumber:
+        ; for numbers 1-8 set the parameter number
+        sub     '1'
+        ret     c
+        ld      hl, SelectedParameterNumber
         cp      (hl)
-        jp      z, FoundCommandKey
-        inc     hl
-        djnz    CheckCommandLoop
+        ret     nc
+        ld      (SelectedParameterNumber), a
+InvalidParameterNumber:
+        add     '1'
         ret
 
-; determine what category of command it is and handle appropriately
-FoundCommandKey:
-        ld      de, IncDecCommands
-        or      a
-        sbc     hl, de
-        jp      nc, FoundIncDecCommand
-        add     hl, de
-        ld      de, ModeSelectCommands
-        or      a
-        sbc     hl, de
-        jp      nc, FoundModeSelectCommand
-        add     hl, de
-        ld      de, Commands
-        or      a
-        sbc     hl, de
-        ld      de, CommandPointers
-        add     hl, hl
-        add     hl, de
-        ld      a, (hl)
-        inc     hl
-        ld      h, (hl)
-        ld      l, a
-        jp      (hl)
+        macro SelectParam addr, length
+        ld      hl, addr
+        ld      a, length
+        jp      SelectGeneric
+        endmacro
 
-; mode select command; set pointers to appropriate mode variables
-SelectedParameter:
-        DefPointer    CycleSpeed
-SelectedParameterLength:
-        defb    1
+SelectSineAddsX:
+        SelectParam SineAddsX, NumSinePnts
+SelectSineAddsY:
+        SelectParam SineAddsY, NumSinePnts
+SelectSineStartsY:
+        SelectParam SineStartsY, NumSinePnts
+SelectSineSpeeds:
+        SelectParam SineSpeeds, NumSineSpeeds
+SelectPlasmaFreqs:
+        SelectParam PlasmaFreqs, NumPlasmaFreqs
+SelectCycleSpeed:
+        SelectParam CycleSpeed, NumCycleSpeeds
 
-FoundModeSelectCommand:
-        ld      de, ParameterPointers
-        add     hl, hl
-        add     hl, de
-        ld      e, (hl)
-        inc     hl
-        ld      d, (hl)
-        ld      (SelectedParameter), de
-        inc     hl
-        ld      a, (hl)
-        inc     hl
-        ld      h, (hl)
-        ld      l, a
-        or      a
-        sbc     hl, de
-        ld      a, l
+SelectGeneric:
+        ld      (SelectedParameter), hl
         ld      (SelectedParameterLength), a
         ret
 
-; increment/decrement command; adjust selected variable
-FoundIncDecCommand:
-        ld      a, l
-        cp      NumIncCommands
-        push    af
-        and     7
-        ld      l, a
-        push    hl
-        ld      hl, SelectedParameterLength
-        cp      (hl)
-        pop     hl
-        jp      nc, AbortChangeParameter
-        ld      de, (SelectedParameter)
+GetSelected:
+        ld      hl, (SelectedParameter)
+        ld      a, (SelectedParameterNumber)
+        ld      de, 0
+        ld      e, a
         add     hl, de
-        pop     af
-        call    c, IncParameter
-        call    nc, DecParameter
-        ld      de, SineSpeeds
-        or      a
-        sbc     hl, de
-        call    c, CalcPlasmaStarts
         ret
-AbortChangeParameter:
-        pop     af
-        ret
-IncParameter:
+
+IncSelected:
+        call    GetSelected
         inc     (hl)
         ret
-DecParameter:
+
+DecSelected:
+        call    GetSelected
         dec     (hl)
         ret
 
@@ -320,9 +269,6 @@ ShowParameterLoop:
         djnz    ShowParameterLoop
         ret
 
-        include "sine.inc"
-        include "random.inc"
-        include "utility.inc"
 
 ; RandomParameters generates a complete set of random parameters
 RandomParameters:
@@ -408,6 +354,7 @@ InitEffect:
         call    LoadPalette
         ret
 
+
 ; PlasmaParams holds parameters for the current effect
 PlasmaParams:
 SineAddsX:
@@ -417,13 +364,13 @@ SineAddsY:
 SineStartsY:
         defs    NumSinePnts
 SineSpeeds:
-        defs    2
+        defs    NumSineSpeeds
 PlasmaFreqs:
-        defs    2
+        defs    NumPlasmaFreqs
 CycleSpeed:
-        defs    1
+        defs    NumCycleSpeeds
 ColorPalette:
-        DefPointer    0
+        DefPointer 0
 PlasmaParamLen: equ $ - PlasmaParams
 
 ; PlasmaParamList contains pre-defined plasma parameters
@@ -537,7 +484,7 @@ NextPalette:
         jp      c, LoadPalette
         ld      hl, ColorPalettes
         ld      (ColorPalette), hl
-        ; fallthrough
+        jp      LoadPalette
 
 
 ; CalcPlasmaStarts calculates the initial value for each tile by summing together 8 sine waves of
@@ -625,6 +572,9 @@ SinePntsY:
 ; total offset applied to each tile of StillFrame is calcualted according to this formula:
 ; D(f,y) = LinearSpeed * f + (sum [n=0..1]: sin(SineSpeed[n] * f + RowWarp[n] * y)) / 2
 CalcPlasmaFrame:
+        ld      a, (StopAnimation)
+        or      a
+        ret     nz
         ld      bc, PlasmaCnts
         ld      de, (SineSpeeds)        
         ld      a, (bc)                 
@@ -715,6 +665,66 @@ ColLoop:
         ld      (de), a
 RetSrc:
         ret
+
+
+; Ported from 6502 Sine Routines from Plascii Petsma by Camelot
+; https://csdb.dk/release/?id=159933
+
+; MakeSineTable builds the sine table for a complete period from a precalculated quarter period.
+; The first 64 values are copied verbatim from the precomputed values. The next 64 values are
+; flipped horizontally by copying them in reverse order. The last 128 values are flipped 
+; vertically by complementing them. The vertically flipped values are written twice, first in
+; forward order, and then in reverse order to flip them horizontally and complete the period.
+; The resulting lookup table is 256 bytes long and stored on a 256-byte boundary so that a sine
+; value can be looked up by loading a single register with the input value.
+
+MakeSineTable:
+        ld      bc, SineSrc             ; source values
+        ld      de, SineTable           ; start of 1st quarter
+        ld      hl, SineTable+$7f       ; end of 2nd quarter
+        exx
+        ld      b, $40                  ; counter
+        ld      de, SineTable+$80       ; start of 3rd quarter
+        ld      hl, SineTable+$ff       ; end of 4th quarter
+SineLoop:
+        exx
+        ld      a, (bc)                 ; load source value
+        inc     bc
+        ld      (de), a                 ; store 1st quarter
+        inc     de
+        ld      (hl), a                 ; store 2nd quarter
+        dec     hl                      ; in reverse order
+        exx
+        cpl                             ; flip vertically
+        ld      (de), a                 ; store 3rd quarter
+        inc     de
+        ld      (hl), a                 ; store 4th quarter
+        dec     hl                      ; in reverse order
+        djnz    SineLoop
+        ret
+
+; Sine table contains pre-computed sine values converted to 8-bit integers.  
+; Real sine values from -1 to 1 correspond to unsigned integers from 0 to 255.
+; The first quarter of the period is pre-computed using python script:
+
+; #!/usr/bin/python3
+; import math
+; amp = 0xfe
+; for i in range(0, 0x40):
+;     sin = 2 + amp / 2 + amp * 0.499999 * math.sin(i / (0x100 / 2 / math.pi))
+;     if i & 7 == 0:
+;         print("defb    ", end="")
+;     print(hex(int(sin)).replace("0x", "$"), end="\n" if i & 7 == 7 else ",")
+
+SineSrc:
+        defb    $81,$84,$87,$8a,$8d,$90,$93,$96
+        defb    $99,$9c,$9f,$a2,$a5,$a8,$ab,$ae
+        defb    $b1,$b4,$b7,$ba,$bc,$bf,$c2,$c4
+        defb    $c7,$ca,$cc,$cf,$d1,$d3,$d6,$d8
+        defb    $da,$dc,$df,$e1,$e3,$e5,$e7,$e8
+        defb    $ea,$ec,$ed,$ef,$f1,$f2,$f3,$f5
+        defb    $f6,$f7,$f8,$f9,$fa,$fb,$fc,$fc
+        defb    $fd,$fe,$fe,$ff,$ff,$ff,$ff,$ff
 
 NextPage:       equ $ + $ff
 SineTable:      equ NextPage & PageMask         ; page align

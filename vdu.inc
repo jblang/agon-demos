@@ -4,7 +4,7 @@
 ; Permission is hereby granted, free of charge, to any person obtaining a 
 ; copy of this software and associated documentation files (the "Software"), 
 ; to deal in the Software without restriction, including without limitation 
-; the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+; the rights to use, copy, modify, merge, publilh, distribute, sublicense, 
 ; and/or sell copies of the Software, and to permit persons to whom the 
 ; Software is furnished to do so, subject to the following conditions:
 ; 
@@ -20,25 +20,35 @@
 ; DEALINGS IN THE SOFTWARE.
 
 ; convenience macros
+    macro SendByteA
+        rst.lil $10
+    endmacro
+
     macro SendByte value
         ld a, value
-        rst.lis $10
+        rst.lil $10
+    endmacro
+
+    macro SendBytesHLBC
+        rst.lil $18
     endmacro
 
     macro SendBytes addr, length
         ld hl, addr
         ld bc, length
-        rst.lis $18
+        rst.lil $18
     endmacro
 
     macro SendString addr, term
         ld hl, addr
         ld bc, 0
         ld a, term
-        rst.lis $18
+        rst.lil $18
     endmacro
 
-; VDU commands: https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/
+; VDU commands
+
+; https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/
 VduNull: equ 0
 VduPrinterChar: equ 1
 VduPrinterOn: equ 2
@@ -75,10 +85,25 @@ VduCursorHome: equ 30
 VduCursorMove: equ 31
 VduBackspace: equ 127
 
+; https://agonconsole8.github.io/agon-docs/vdp/System-Commands/
+VduSystem: equ 0
+VduVsyncBufferSwap: equ $C3
+
+; https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/#vdu-23-1-n-cursor-control
+VduCursorDisplay: equ 1
+VduCursorHide: equ 0
+VduCursorShow: equ 1
+VduCursorSteady: equ 2
+VduCursorFlash: equ 3
+
+; https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/#vdu-23-16-setting-mask-define-cursor-movement-behaviour
+VduCursorMovement: equ 16
+VduScrollProtection: equ %00000001
+
 ; standard control characters
 CR:	    equ     0dh
 LF:	    equ     0ah
-EOS:    equ     0
+EOS:    equ     0       ; end of string (null terminated)
 
 ; output a character
 ; A = character to output
@@ -91,7 +116,13 @@ CharOut:
 StringOut:
     ld bc, 0
     ld a, EOS
-    rst.lil $18
+    ; fallthrough
+
+; output a specified number of bytes
+; HL = address of bytes
+; BC = byte count
+BytesOut:
+    SendBytesHLBC
     ret
 
 ; output a space
@@ -142,4 +173,60 @@ TextColor:
     ld a, b
     add VduBackgroundColor
     rst.lil $10
+    ret
+
+; hide the text cursor
+TextCursorHide:
+    SendByte VduCommand
+    SendByte VduCursorDisplay
+    SendByte VduCursorHide
+    ret
+
+; show the text cursor
+TextCursorShow:
+    SendByte VduCommand
+    SendByte VduCursorDisplay
+    SendByte VduCursorShow
+    ret
+
+; Set the specified cursor movement bits
+; C = bits to set
+SetCursorMovementBit:
+    SendByte VduCommand
+    SendByte VduCursorMovement
+    ld a, c
+    cpl
+    SendByteA
+    cpl
+    SendByteA
+    ret
+
+; clear the specified cursor movement bits
+; C = bits to clear
+ClearCursorMovementBit:
+    SendByte VduCommand
+    SendByte VduCursorMovement
+    ld a, c
+    cpl
+    SendByteA
+    xor a
+    SendByteA
+    ret
+
+; prevent the screen from scrolling when the last character is written
+EnableScrollProtection:
+    ld c, VduScrollProtection
+    jp SetCursorMovementBit
+
+; allow the screen to scroll when the last character is written
+DisableScrollProtection:
+    ld c, VduScrollProtection
+    jp ClearCursorMovementBit
+    ret
+
+; wait for vsync (and swap buffers if using a buffered video mode)
+WaitVSync:
+    SendByte VduCommand
+    SendByte VduSystem
+    SendByte VduVsyncBufferSwap
     ret

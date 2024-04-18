@@ -32,6 +32,8 @@ InitGraphics:
     call LoadGradient
     call LoadC64Palette
     call DefaultTextColor
+    call TextCursorHide
+    ;call EnableScrollProtection
     ret
 
 LoadC64Palette:
@@ -42,7 +44,7 @@ LoadC64Palette:
 SendScreenBuffer:
     SendByte VduCursorHome
     ld hl, ScreenBuffer
-    ld bc, ScreenSize+40+40+40+40+40+40+10+5 ; WTF?! it should not neeed this
+    ld bc, ScreenSize-1
 SendScreenBufferLoop:
     ld a, (hl)
     push bc
@@ -51,9 +53,9 @@ SendScreenBufferLoop:
     pop hl
     pop bc
     inc hl
-    dec c
-    jp nz, SendScreenBufferLoop
-    dec b
+    dec bc
+    ld a, b
+    or c
     jp nz, SendScreenBufferLoop
     ret
 

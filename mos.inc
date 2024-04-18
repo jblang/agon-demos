@@ -269,20 +269,10 @@ vdp_pflag_mouse:        EQU        01000000b
 ;	fname:		DS	256	; Primary file name
 ;FILINFO_SIZE .ENDSTRUCT FILINFO
 
-
-; wait for the next vertical sync
-WaitVSync:
-    push ix     			; wait for vblank interrupt
-    MosCall mos_sysvars		; fetch pointer to system variables
-    ld.lil a, (ix + sysvar_time + 0)
-WaitVSyncLoop:
-    cp.lil a, (ix + sysvar_time + 0)
-    jr z, WaitVSyncLoop
-    pop	ix
-    ret
-
 ; get a key press in A
 GetKey:
-    MosCall mos_getkey
+    MosCall mos_sysvars
+    ld a, (ix + sysvar_keyascii)
+    ld (ix + sysvar_keyascii), 0
     or a
     ret

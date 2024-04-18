@@ -19,6 +19,7 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
+; Ported from Plascii Petsma for C64 by Camelot: https://csdb.dk/release/?id=159933
 
 ; Plascii Petsma by Cruzer/Camelot has one of the nicest looking plasma effects I've seen for
 ; the C64. Since he included the source code, I was able to port it to the Z80 and TMS9918.   
@@ -30,16 +31,16 @@
 ; - runtime generation of random effects
 ; - adjust parameters to customize an effect
 
-; Before getting into a specific implementation, it helps to understand how plasma effects work
-; in general. Rather than write another explanation when others have already done it well, I'll
-; refer you to  this one, which covers the basic concepts using C code:
-; https://lodev.org/cgtutor/plasma.html
+; Before diving into this code, it helps to understand how plasma effects work in general.
+; Rather than write another explanation when others have already done it well, I'll refer
+; you to this one: https://lodev.org/cgtutor/plasma.html.
 
 ; uncomment ONLY ONE of these depending on the platform
         include "agon.inc"
         ;include "rcmsx.inc"
 
         include "utility.inc"
+        include "data.inc"
 
 NumSinePnts:    equ 8
 NumSineSpeeds:  equ 2
@@ -111,6 +112,15 @@ Help:
         defb    "Parameter Modification:", CR, LF
         defb    " 1-8   increment selected parameter (+ shift to decrement)", CR, LF
         defb    " 0     clear selected parameters", CR, LF, EOS
+
+About:
+        defb    "Plasma for TMS9918", CR, LF
+        defb    "Z80 Code by J.B. Langston", CR, LF, CR, LF
+        defb    "Color Palettes and Sine Routines ported from "
+        defb    "Plascii Petsma by Cruzer/Camelot", CR, LF
+        defb    "Gradient Patterns ripped from "
+        defb    "Produkthandler Kom Her by Cruzer/Camelot", CR, LF, CR, LF
+        defb    "Press 'q' to quit, '?' for help.", CR, LF, EOS
 
 ; parameter selection
 SelectedParameter:
@@ -373,105 +383,6 @@ ColorPalette:
         DefPointer 0
 PlasmaParamLen: equ $ - PlasmaParams
 
-; PlasmaParamList contains pre-defined plasma parameters
-PlasmaParamList:
-        defb    $fa,$05,$03,$fa,$07,$04,$fe,$fe
-        defb    $fe,$01,$fe,$02,$03,$ff,$02,$02
-        defb    $5e,$e8,$eb,$32,$69,$4f,$0a,$41
-        defb    $fe,$fc
-        defb    $06,$07
-        defb    $ff
-        DefPointer Pal01
-
-        defb    $04,$05,$fc,$02,$fc,$03,$02,$01
-        defb    $00,$01,$03,$fd,$02,$fd,$fe,$00
-        defb    $51,$a1,$55,$c1,$0d,$5a,$dd,$26
-        defb    $fe,$fd
-        defb    $08,$08
-        defb    $f8
-        DefPointer Pal06
-
-        defb    $f9,$06,$fe,$fa,$fa,$00,$07,$fb
-        defb    $02,$01,$02,$03,$03,$00,$fd,$00
-        defb    $34,$85,$a6,$11,$89,$2b,$fa,$9c
-        defb    $fc,$fb
-        defb    $09,$08
-        defb    $fa
-        DefPointer Pal09
-
-        defb    $00,$01,$03,$00,$01,$ff,$04,$fc
-        defb    $01,$ff,$03,$fe,$fe,$03,$02,$02
-        defb    $f3,$02,$0b,$89,$8c,$d3,$23,$aa
-        defb    $fe,$01
-        defb    $07,$07
-        defb    $08
-        DefPointer Pal0a
-
-        defb    $04,$04,$04,$fc,$fd,$04,$ff,$fc
-        defb    $01,$02,$02,$01,$ff,$00,$ff,$01
-        defb    $3a,$21,$53,$93,$39,$b7,$26,$99
-        defb    $fd,$fe
-        defb    $05,$06
-        defb    $03
-        DefPointer Pal04
-
-        defb    $fd,$fd,$fd,$02,$04,$00,$fd,$02
-        defb    $03,$02,$fd,$02,$03,$fe,$ff,$ff
-        defb    $bc,$99,$5d,$2f,$e6,$16,$af,$0e
-        defb    $fd,$ff
-        defb    $07,$07
-        defb    $f5
-        DefPointer Pal07
-
-        defb    $fc,$00,$00,$ff,$04,$04,$00,$01
-        defb    $fd,$03,$00,$02,$00,$03,$02,$03
-        defb    $30,$c7,$07,$60,$36,$2b,$e8,$ec
-        defb    $ff,$fe
-        defb    $09,$03
-        defb    $f8
-        DefPointer Pal05
-
-        defb    $fd,$fc,$fe,$00,$00,$04,$fe,$01
-        defb    $03,$03,$fe,$02,$00,$03,$fe,$00
-        defb    $21,$d7,$34,$1b,$5d,$eb,$8e,$7d
-        defb    $fd,$ff
-        defb    $0a,$03
-        defb    $fd
-        DefPointer Pal03
-
-        defb    $fe,$00,$ff,$01,$04,$02,$fe,$fd
-        defb    $02,$01,$fe,$01,$03,$ff,$03,$ff
-        defb    $0b,$0f,$ea,$8c,$e0,$f8,$05,$0e
-        defb    $fc,$fd
-        defb    $07,$06
-        defb    $f8
-        DefPointer Pal0c
-
-        defb    $33,$04,$34,$fc,$dd,$24,$cf,$7c
-        defb    $c1,$73,$02,$31,$fe,$a0,$ee,$01
-        defb    $3a,$21,$53,$93,$39,$b7,$26,$99
-        defb    $00,$00
-        defb    $04,$01
-        defb    $fd
-        DefPointer Pal00
-
-        defb    $ff,$00,$01,$ff,$02,$fe,$00,$02
-        defb    $ff,$02,$01,$02,$fe,$01,$00,$00
-        defb    $1d,$bb,$c5,$a3,$ab,$6c,$ed,$a6
-        defb    $fd,$fe
-        defb    $03,$03
-        defb    $f8
-        DefPointer Pal08
-
-        defb    $02,$03,$fd,$fd,$01,$fc,$fd,$00
-        defb    $01,$03,$fd,$fe,$fe,$03,$00,$00
-        defb    $69,$ac,$3b,$c1,$fe,$21,$37,$84
-        defb    $fc,$fd
-        defb    $06,$05
-        defb    $fa
-        DefPointer Pal0b
-LastPlasmaParam:
-
 ; NextPalette changes to the next color palette
 NextPalette:
         ld      hl, (ColorPalette)
@@ -667,9 +578,6 @@ RetSrc:
         ret
 
 
-; Ported from 6502 Sine Routines from Plascii Petsma by Camelot
-; https://csdb.dk/release/?id=159933
-
 ; MakeSineTable builds the sine table for a complete period from a precalculated quarter period.
 ; The first 64 values are copied verbatim from the precomputed values. The next 64 values are
 ; flipped horizontally by copying them in reverse order. The last 128 values are flipped 
@@ -702,29 +610,6 @@ SineLoop:
         dec     hl                      ; in reverse order
         djnz    SineLoop
         ret
-
-; Sine table contains pre-computed sine values converted to 8-bit integers.  
-; Real sine values from -1 to 1 correspond to unsigned integers from 0 to 255.
-; The first quarter of the period is pre-computed using python script:
-
-; #!/usr/bin/python3
-; import math
-; amp = 0xfe
-; for i in range(0, 0x40):
-;     sin = 2 + amp / 2 + amp * 0.499999 * math.sin(i / (0x100 / 2 / math.pi))
-;     if i & 7 == 0:
-;         print("defb    ", end="")
-;     print(hex(int(sin)).replace("0x", "$"), end="\n" if i & 7 == 7 else ",")
-
-SineSrc:
-        defb    $81,$84,$87,$8a,$8d,$90,$93,$96
-        defb    $99,$9c,$9f,$a2,$a5,$a8,$ab,$ae
-        defb    $b1,$b4,$b7,$ba,$bc,$bf,$c2,$c4
-        defb    $c7,$ca,$cc,$cf,$d1,$d3,$d6,$d8
-        defb    $da,$dc,$df,$e1,$e3,$e5,$e7,$e8
-        defb    $ea,$ec,$ed,$ef,$f1,$f2,$f3,$f5
-        defb    $f6,$f7,$f8,$f9,$fa,$fb,$fc,$fc
-        defb    $fd,$fe,$fe,$ff,$ff,$ff,$ff,$ff
 
 NextPage:       equ $ + $ff
 SineTable:      equ NextPage & PageMask         ; page align

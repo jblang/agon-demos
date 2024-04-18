@@ -21,10 +21,10 @@
 
     include "agon.inc"
     include "utility.inc"
+    include "data.inc"
 
 Main:
-    call DefaultTextColor
-    call ClearScreen
+    call InitGraphics
     ld hl, Message
     call StringOut
     call LoadGradient

@@ -63,6 +63,7 @@ Exit:
     ld hl,0                                 ; load the MOS API return code (0) for no errors.
     ret                                     ; return to MOS
 
+; platform specific graphics initialization
 InitGraphics:
     ld c, ScreenMode
     call VdpMode
@@ -73,8 +74,75 @@ InitGraphics:
     ;call EnableScrollProtection
     ret
 
+    
+; get a key press in A
+GetKey:
+    MosCall mos_sysvars         ; get ix pointer to sysvars
+    ld a, (ix+sysvar_vkeydown)  ; get key state
+    or a                        ; key is down; wait for it to be released
+    jp nz, GetKey
+    ld a, (ix+sysvar_keyascii)  ; load the ascii code of the key pressed
+    ld (ix+sysvar_keyascii), 0  ; clear it for next time
+    or a                        ; set z flag if key was pressed
+    ret
+
+; Load a data table into the VDU
+; IX = table address
+; HL = entry prefix function (0 for none)
+; D = entry stride
+; E = entry count
+; BC = free for use in prefix function
+LoadTable:
+    call TablePrefix
+    push de
+LoadTableLoop:
+    ld a, (ix+0)
+    SendByteA
+    inc ix
+    dec d
+    jp nz, LoadTableLoop
+    pop de
+    dec e
+    jp nz, LoadTable
+    ret  
+
+; call table prefix function in HL, unless it is 0
+; HL = function pointer
+TablePrefix:
+    ld a, h
+    or l
+    ret z
+    jp (hl)
+
+; load the C64 palette into agon palette
 LoadC64Palette:
-    SendBytes C64Palette, C64PaletteLength
+    ld ix, C64Palette
+    ld hl, PalettePrefix
+    ld c, 0
+    ld d, C64PaletteStride
+    ld e, C64PaletteCount
+    jp LoadTable
+
+PalettePrefix:
+    SendByte VduSetPalette
+    SendByte c
+    SendByte VduSetPaletteRGB
+    inc c
+    ret
+
+; load the gradient table into custom chracters
+LoadGradient:
+    ld ix, Gradient
+    ld hl, GradientPrefix
+    ld c, GradientStart
+    ld d, GradientStride
+    ld e, GradientCount
+    jp LoadTable
+
+GradientPrefix:
+    SendByte VduCustomChar
+    SendByte c
+    inc c
     ret
 
 ; Send all the tiles in the screen buffer
@@ -96,22 +164,128 @@ SendScreenBufferLoop:
     jp nz, SendScreenBufferLoop
     ret
 
-; Load Gradient characters into VDU
-LoadGradient:
-    ld hl, Gradient
-    inc hl                      ; start at second byte of first character
-    ld de, GradientStride
-    ld a, GradientStart
-    ld b, GradientCount
-LoadGradientLoop:
-    ld (hl), a                  ; set character number
-    inc a                       ; increment character number
-    add hl, de
-    djnz LoadGradientLoop
-    ld hl, Gradient
-    ld bc, GradientLength
-    rst.lil $18
+; make a color tile with specified foreground, and background colors
+; HL = bitmap input buffer
+; DE = tile output buffer
+; B = background color
+; C = foreground color
+MakeTile:
+    ld a, 8
+    ld de, TempTileBuffer
+MakeTileRowLoop:
+    push af
+    ld a, (hl)
+    call MakeTileRow
+    pop af
+    inc hl
+    dec a
+    jp nz, MakeTileRowLoop
     ret
+
+; make a single row of bytes in a bitmap
+; HL = output pointer
+; A = bitmap
+; B = background color in RGBA2222 format
+; C = foreground color in RGBA2222 format
+MakeTileRow:
+    ld d, 8
+MakeTileColLoop:
+    add a, a
+    ld (hl), b
+    jp c, MakeTileNextCol
+    ld (hl), c
+MakeTileNextCol:
+    inc hl
+    dec d
+    jp nz, MakeTileColLoop
+    ret
+TempTileBuffer:
+    defs 64
+TempTileBufferLength: equ $ - TempTileBuffer
+
+; clear a buffer
+; DE = buffer id
+ClearBuffer:
+    SendByte VduCommand
+    SendByte VduSystem
+    SendByte VduBuffer
+    SendByte e                  ; buffer id
+    SendByte d
+    SendByte VduBufferClear
+    ret
+
+; send a block of data to a buffer
+; DE = buffer id
+; BC = buffer length
+; HL = buffer data
+SendBufferBlock:
+    SendByte VduCommand
+    SendByte VduSystem
+    SendByte VduBuffer
+    SendByte e                  ; buffer id
+    SendByte d
+    SendByte VduBufferWriteBlock
+    SendByte c                  ; length
+    SendByte b
+SendBufferLoop:
+    SendByte (hl)
+    inc hl
+    dec bc
+    ld a, b
+    or c
+    jp nz, SendBufferLoop
+    ret
+
+; select a bitmap using buffer ID
+; DE = buffer id
+SelectBitmapBuffer:
+    SendByte VduCommand
+    SendByte VduBitmap
+    SendByte VduBitmapSelectBuffer
+    SendByte e                  ; buffer id
+    SendByte d
+    ret
+
+; create selected bitmap from buffer
+; BC = width
+; DE = height
+; L = format
+CreateBitmapFromBuffer:
+    push af
+    SendByte VduCommand
+    SendByte VduBitmap
+    SendByte VduBitmapCreateBuffer
+    SendByte c                  ; width
+    SendByte b
+    SendByte e                  ; height
+    SendByte d
+    SendByte l                  ; format
+    ret
+
+; map character number to bitmap using buffer id
+; C = char
+; DE = bitmap id
+MapCharToBitmap:
+    SendByte VduCommand
+    SendByte VduSystem
+    SendByte VduMapCharToBitmap
+    SendByte c                  ; character number
+    SendByte e                  ; bitmap id
+    SendByte d
+    ret
+
+; send a character, escaped if necessary
+; A = char to send
+SendChar:
+    cp ' '                      ; check if it's a control char
+    jp nc, SendCharUnescaped    ; if not, send unescaped
+    push af
+    SendByte VduEscapeChar      ; if so, send escape command first
+    pop af
+SendCharUnescaped:
+    SendByteA
+    ret
+
 
 ; macro to allow loading colors in both ascending and descending order
     macro LoadColors pen, paper

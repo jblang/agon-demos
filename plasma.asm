@@ -19,6 +19,8 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
+; =============================================================================
+
 ; Ported from Plascii Petsma for C64 by Camelot: https://csdb.dk/release/?id=159933
 
 ; Plascii Petsma by Cruzer/Camelot has one of the nicest looking plasma effects I've seen for
@@ -35,17 +37,28 @@
 ; Rather than write another explanation when others have already done it well, I'll refer
 ; you to this one: https://lodev.org/cgtutor/plasma.html.
 
-; uncomment ONLY ONE of these depending on the platform
+; =============================================================================
+; uncomment ONLY ONE of these includes depending on the platform:
+
         include "agon.inc"
         ;include "rcmsx.inc"
 
+; =============================================================================
+; general includes
+
         include "utility.inc"
         include "data.inc"
+
+; =============================================================================
+; constants
 
 NumSinePnts:    equ 8
 NumSineSpeeds:  equ 2
 NumPlasmaFreqs: equ 2
 NumCycleSpeeds: equ 1
+
+; =============================================================================
+; central dispatch
 
 Main:                                   ; initialization tasks
         call    RandomSeed
@@ -68,10 +81,11 @@ NoEffectCycle:
         call    SendScreenBuffer
         call    GetKey
         JumpIf  'q', Exit               ; must be handled from main
-        call    CheckCommand
+        call    Dispatch
         jp      MainLoop
 
-CheckCommand:
+Dispatch:
+        ; did you remember to add your new command to the help below?
         JumpIf  '?', ShowHelp
         JumpIf  'p', NextPalette
         JumpIf  'h', ToggleHold
@@ -122,7 +136,9 @@ About:
         defb    "Produkthandler Kom Her by Cruzer/Camelot", CR, LF, CR, LF
         defb    "Press 'q' to quit, '?' for help.", CR, LF, EOS
 
-; parameter selection
+; =============================================================================
+; parameter configuration
+
 SelectedParameter:
         DefPointer SineAddsX
 SelectedParameterLength:
@@ -222,19 +238,18 @@ ClearParameterLoop:
         djnz    ClearParameterLoop
         jp      CalcPlasmaStarts
 
-; parameter display names
 SineAddsXMsg:
-        defb CR, LF, "x increment: $"
+        defb CR, LF, "x increment: ", EOS
 SineAddsYMsg:
-        defb CR, LF, "y increment: $"
+        defb CR, LF, "y increment: ", EOS
 SineStartsMsg:
-        defb CR, LF, "init values: $"
+        defb CR, LF, "init values: ", EOS
 SineSpeedsMsg:
-        defb CR, LF, "sine speeds: $"
+        defb CR, LF, "sine speeds: ", EOS
 PlasmaFreqMsg:
-        defb CR, LF, "plasma freq: $"
+        defb CR, LF, "plasma freq: ", EOS
 CycleSpeedMsg:
-        defb CR, LF, "cycle speed: $"
+        defb CR, LF, "cycle speed: ", EOS
 
 ; display current parameter values
 ViewParameters:
@@ -279,7 +294,6 @@ ShowParameterLoop:
         djnz    ShowParameterLoop
         ret
 
-
 ; RandomParameters generates a complete set of random parameters
 RandomParameters:
         ld      d, 0
@@ -323,7 +337,9 @@ RandomParameters:
         call    CalcPlasmaStarts
         jp      LoadPalette
         
-; select and initialize plasma effects
+; =============================================================================
+; effect intialization
+
 DurationCnt:
         defb    0
 PlasmaParamPnt:
@@ -364,6 +380,8 @@ InitEffect:
         call    LoadPalette
         ret
 
+; =============================================================================
+; plasma calculations
 
 ; PlasmaParams holds parameters for the current effect
 PlasmaParams:

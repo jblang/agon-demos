@@ -268,11 +268,3 @@ vdp_pflag_mouse:        EQU        01000000b
 ;	altname:	DS	13	; Alternative file name
 ;	fname:		DS	256	; Primary file name
 ;FILINFO_SIZE .ENDSTRUCT FILINFO
-
-; get a key press in A
-GetKey:
-    MosCall mos_sysvars
-    ld a, (ix + sysvar_keyascii)
-    ld (ix + sysvar_keyascii), 0
-    or a
-    ret

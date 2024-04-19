@@ -70,6 +70,7 @@ VduTextColor: equ 17
 VduBackgroundColor: equ 128
 VduGraphicsColor: equ 18
 VduSetPalette: equ 19
+VduSetPaletteRGB: equ $ff
 VduResetPalette: equ 20
 VduDisableScreen: equ 21
 VduSetMode: equ 22
@@ -78,7 +79,7 @@ VduCommand: equ 23
 VduGraphicsViewport: equ 24
 VduPlot: equ 25
 VduResetViewports: equ 26
-VduOutputChar: equ 27
+VduEscapeChar: equ 27
 VduTextViewport: equ 28
 VduGraphicsOrigin: equ 29
 VduCursorHome: equ 30
@@ -88,6 +89,7 @@ VduBackspace: equ 127
 ; https://agonconsole8.github.io/agon-docs/vdp/System-Commands/
 VduSystem: equ 0
 VduVsyncBufferSwap: equ $C3
+VduMapCharToBitmap: equ $92
 
 ; https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/#vdu-23-1-n-cursor-control
 VduCursorDisplay: equ 1
@@ -99,6 +101,25 @@ VduCursorFlash: equ 3
 ; https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/#vdu-23-16-setting-mask-define-cursor-movement-behaviour
 VduCursorMovement: equ 16
 VduScrollProtection: equ %00000001
+
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Buffered-Commands-API.md
+VduBuffer: equ $A0
+VduBufferWriteBlock: equ 0
+VduBufferCall: equ 1
+VduBufferClear: equ 2
+
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Bitmaps-API.md
+VduBitmap: equ 27
+VduBitmapSelect: equ 0
+VduBitmapLoad: equ 1
+VduBitmapSolidColor: equ 2
+VduBitmapDraw: equ 3
+VduBitmapSelectBuffer: equ $20
+VduBitmapCreateBuffer: equ $21
+VduBitmapFormatRGBA8888: equ 0
+VduBitmapFormatRGBA2222: equ 1
+VduBitmapFormatMono: equ 2
+VduBitmapFormatNative: equ 3
 
 ; standard control characters
 CR:	    equ     0dh

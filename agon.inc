@@ -116,11 +116,11 @@ TablePrefix:
 
 ; load the C64 palette into agon palette
 LoadC64Palette:
-    ld ix, C64Palette
+    ld ix, C64PaletteRGB
     ld hl, PalettePrefix
     ld c, 0
-    ld d, C64PaletteStride
-    ld e, C64PaletteCount
+    ld d, C64PaletteRGBStride
+    ld e, C64PaletteRGBCount
     jp LoadTable
 
 PalettePrefix:
@@ -298,24 +298,22 @@ SendCharUnescaped:
         inc de
     endmacro
 
-LoadPalette:
-    ld ix, (ColorPalette)
-    ; fallthrough
-
 ; Load a Plascii-style palette into the color lookup table
-; IX = address of palette to load
-LoadColorLookup:
-    ld de, ColorLookup
+; HL = address of palette to load
+LoadColorTable:
+    push hl
+    pop ix                      ; palette address is now in ix
+    ld de, ColorTable
     ld b, 4
-LoadColorLookupAsc:             ; load colors into lookup in ascending order
+LoadColorTableAsc:             ; load colors into lookup in ascending order
     LoadColors (ix+1), (ix+0)
     inc ix
-    djnz LoadColorLookupAsc
+    djnz LoadColorTableAsc
     ld b, 4
-LoadColorLookupDesc:            ; load colors into lookup in descending order
+LoadColorTableDesc:            ; load colors into lookup in descending order
     LoadColors (ix-1), (ix+0)
     dec ix
-    djnz LoadColorLookupDesc
+    djnz LoadColorTableDesc
     ret
 
 ; Output gradients for all the palettes one after another to demonstrate them
@@ -329,7 +327,7 @@ ShowPalettesLoop:
     sub b
     call HexOut
     call Space
-    call LoadColorLookup
+    call LoadColorTable
     call ShowGradient
     call DefaultTextColor
     call NewLine
@@ -372,7 +370,7 @@ ShowTile:
     ret
 ShowTileColor:
     ld (hl), a              ; save the current logical color
-    ld hl, ColorLookup      ; look up the pen and paper color based on logical color
+    ld hl, ColorTable       ; look up the pen and paper color based on logical color
     ld b, 0
     ld c, a
     add hl, bc
@@ -384,7 +382,7 @@ ShowTileColor:
     SendBytes TileBuffer, TileBufferLength  ; send the tile buffer to the VDP
     ret
 
-ColorLookup:
+ColorTable:
     .ds 16
 CurrentColor:
     .db $ff                 ; ff is never a valid logical color

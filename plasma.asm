@@ -325,15 +325,7 @@ RandomParameters:
         call    RandomSeries
         call    RandomNumber            ; randomly select palette
         ld      a, l
-        and     $f                      ; assumes 16 palettes of 8 colors each
-        ld      h, 0
-        ld      l, a
-        add     hl, hl
-        add     hl, hl
-        add     hl, hl
-        ld      de, ColorPalettes
-        add     hl, de
-        ld      (ColorPalette), hl
+        ld      (ColorPalette), a
         call    CalcPlasmaStarts
         jp      LoadPalette
         
@@ -398,22 +390,32 @@ PlasmaFreqs:
 CycleSpeed:
         defs    NumCycleSpeeds
 ColorPalette:
-        DefPointer 0
+        defb    0
 PlasmaParamLen: equ $ - PlasmaParams
 
 ; NextPalette changes to the next color palette
 NextPalette:
-        ld      hl, (ColorPalette)
-        ld      de, ColorPaletteLength
-        add     hl, de
-        ld      (ColorPalette), hl
-        ld      de, ColorPaletteEnd
+        ld      hl, ColorPalette        ; increment the palette number
+        inc     (hl)
+        ld      a, (hl)
+        cp      ColorPaletteCount       ; check if it's beyond the last one
+        jp      c, LoadPalette          ; if not, load it
+        xor     a                       ; if so, wrap around to the first one
+        ld      (hl), a
+        ; fallthrough
+
+; Load the currently selected color palette
+LoadPalette:
+        ld      hl, ColorPalettes       ; calculate address of selected palette
+        ld      a, (ColorPalette)
         or      a
-        sbc     hl, de
-        jp      c, LoadPalette
-        ld      hl, ColorPalettes
-        ld      (ColorPalette), hl
-        jp      LoadPalette
+        jp      z, LoadColorTable
+        ld      de, ColorPaletteStride
+LoadPaletteLoop:
+        add     hl, de
+        dec     a
+        jp      nz, LoadPaletteLoop
+        jp      LoadColorTable
 
 
 ; CalcPlasmaStarts calculates the initial value for each tile by summing together 8 sine waves of

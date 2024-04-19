@@ -160,7 +160,6 @@ endif
 LoadColorTable:
         ld      de, (TmsColorAddr)
         call    TmsWriteAddr
-        ld      hl, (ColorPalette)
         ld      c, (hl)
         ld      d, c
         ld      e, PaletteLen-1

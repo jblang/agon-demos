@@ -71,44 +71,63 @@ GradientLength: equ $ - Gradient
 GradientCount: equ GradientLength / GradientStride
 GradientStart: equ 128
 
-; C64 Palette C64Palette values from https://www.c64-wiki.com/wiki/Color
-C64Palette:
-    .db $00,$00,$00    ; C64 colors
-C64PaletteStride:   equ $ - C64Palette
-    .db $ff,$ff,$ff
-    .db $88,$00,$00
-    .db $aa,$ff,$ee
-    .db $cc,$44,$cc
-    .db $00,$cc,$55
-    .db $00,$00,$aa
-    .db $ee,$ee,$77
-    .db $dd,$88,$55
-    .db $66,$44,$00
-    .db $ff,$77,$77
-    .db $33,$33,$33
-    .db $77,$77,$77
-    .db $aa,$ff,$66
-    .db $00,$88,$ff
-    .db $bb,$bb,$bb 
-C64PaletteLength: equ $ - C64Palette
-C64PaletteCount: equ C64PaletteLength / C64PaletteStride
+; C64 Palette RGB values from https://www.c64-wiki.com/wiki/Color
+C64PaletteRGB:
+    .db $00,$00,$00    ; black
+C64PaletteRGBStride:   equ $ - C64PaletteRGB
+    .db $ff,$ff,$ff    ; white
+    .db $88,$00,$00    ; red
+    .db $aa,$ff,$ee    ; cyan
+    .db $cc,$44,$cc    ; purple
+    .db $00,$cc,$55    ; green
+    .db $00,$00,$aa    ; blue
+    .db $ee,$ee,$77    ; yellow
+    .db $dd,$88,$55    ; orange
+    .db $66,$44,$00    ; brown
+    .db $ff,$77,$77    ; light red
+    .db $33,$33,$33    ; dark grey
+    .db $77,$77,$77    ; grey
+    .db $aa,$ff,$66    ; light green
+    .db $00,$88,$ff    ; light blue
+    .db $bb,$bb,$bb    ; light grey
+C64PaletteRGBLength: equ $ - C64PaletteRGB
+C64PaletteRGBCount: equ C64PaletteRGBLength / C64PaletteRGBStride
+
+; mapping of C64 colors to nearest approximation on TMS9918A
+C64PaletteTMS:
+    .db $01
+    .db $0f     ; white
+    .db $06     ; red
+    .db $07     ; cyan
+    .db $0d     ; purple
+    .db $02     ; green -> medium green
+    .db $04     ; blue
+    .db $0b     ; yellow
+    .db $09     ; orange -> light red
+    .db $0a     ; brown -> dark yellow
+    .db $08     ; light red -> medium red
+    .db $01     ; dark grey -> black
+    .db $0e     ; grey
+    .db $03     ; light green
+    .db $05     ; light blue
+    .db $0e     ; light grey -> grey
 
 ; Predefined palettes from Plascii Petsma: https://csdb.dk/release/?id=159933
 ColorPalettes:
-Pal00:  .db $0,$b,$c,$f,$1
+    .db $0,$b,$c,$f,$1
 ColorPaletteStride: equ $ - ColorPalettes
-Pal01:  .db $0,$0,$0,$5,$5
-Pal02:  .db $d,$3,$e,$4,$2
-Pal03:  .db $9,$2,$4,$b,$6
-Pal04:  .db $6,$b,$8,$2,$2
-Pal05:  .db $a,$c,$e,$5,$5
-Pal06:  .db $6,$b,$8,$a,$7
-Pal07:  .db $d,$3,$c,$8,$2
-Pal08:  .db $1,$3,$e,$4,$2
-Pal09:  .db $d,$5,$b,$4,$a
-Pal0a:  .db $3,$e,$b,$8,$a
-Pal0b:  .db $a,$4,$6,$e,$3
-Pal0c:  .db $a,$8,$9,$b,$e
+    .db $0,$0,$0,$5,$5
+    .db $d,$3,$e,$4,$2
+    .db $9,$2,$4,$b,$6
+    .db $6,$b,$8,$2,$2
+    .db $a,$c,$e,$5,$5
+    .db $6,$b,$8,$a,$7
+    .db $d,$3,$c,$8,$2
+    .db $1,$3,$e,$4,$2
+    .db $d,$5,$b,$4,$a
+    .db $3,$e,$b,$8,$a
+    .db $a,$4,$6,$e,$3
+    .db $a,$8,$9,$b,$e
 ColorPaletteEnd:    equ $
 ColorPaletteLength: equ $ - ColorPalettes
 ColorPaletteCount:  equ ColorPaletteLength / ColorPaletteStride
@@ -121,7 +140,7 @@ PlasmaParamList:
         defb    $fe,$fc
         defb    $06,$07
         defb    $ff
-        DefPointer Pal01
+        defb    $01
 
         defb    $04,$05,$fc,$02,$fc,$03,$02,$01
         defb    $00,$01,$03,$fd,$02,$fd,$fe,$00
@@ -129,7 +148,7 @@ PlasmaParamList:
         defb    $fe,$fd
         defb    $08,$08
         defb    $f8
-        DefPointer Pal06
+        defb    $06
 
         defb    $f9,$06,$fe,$fa,$fa,$00,$07,$fb
         defb    $02,$01,$02,$03,$03,$00,$fd,$00
@@ -137,7 +156,7 @@ PlasmaParamList:
         defb    $fc,$fb
         defb    $09,$08
         defb    $fa
-        DefPointer Pal09
+        defb    $09
 
         defb    $00,$01,$03,$00,$01,$ff,$04,$fc
         defb    $01,$ff,$03,$fe,$fe,$03,$02,$02
@@ -145,7 +164,7 @@ PlasmaParamList:
         defb    $fe,$01
         defb    $07,$07
         defb    $08
-        DefPointer Pal0a
+        defb    $0a
 
         defb    $04,$04,$04,$fc,$fd,$04,$ff,$fc
         defb    $01,$02,$02,$01,$ff,$00,$ff,$01
@@ -153,7 +172,7 @@ PlasmaParamList:
         defb    $fd,$fe
         defb    $05,$06
         defb    $03
-        DefPointer Pal04
+        defb    $04
 
         defb    $fd,$fd,$fd,$02,$04,$00,$fd,$02
         defb    $03,$02,$fd,$02,$03,$fe,$ff,$ff
@@ -161,7 +180,7 @@ PlasmaParamList:
         defb    $fd,$ff
         defb    $07,$07
         defb    $f5
-        DefPointer Pal07
+        defb    $07
 
         defb    $fc,$00,$00,$ff,$04,$04,$00,$01
         defb    $fd,$03,$00,$02,$00,$03,$02,$03
@@ -169,7 +188,7 @@ PlasmaParamList:
         defb    $ff,$fe
         defb    $09,$03
         defb    $f8
-        DefPointer Pal05
+        defb    $05
 
         defb    $fd,$fc,$fe,$00,$00,$04,$fe,$01
         defb    $03,$03,$fe,$02,$00,$03,$fe,$00
@@ -177,7 +196,7 @@ PlasmaParamList:
         defb    $fd,$ff
         defb    $0a,$03
         defb    $fd
-        DefPointer Pal03
+        defb    $03
 
         defb    $fe,$00,$ff,$01,$04,$02,$fe,$fd
         defb    $02,$01,$fe,$01,$03,$ff,$03,$ff
@@ -185,7 +204,7 @@ PlasmaParamList:
         defb    $fc,$fd
         defb    $07,$06
         defb    $f8
-        DefPointer Pal0c
+        defb    $0c
 
         defb    $33,$04,$34,$fc,$dd,$24,$cf,$7c
         defb    $c1,$73,$02,$31,$fe,$a0,$ee,$01
@@ -193,7 +212,7 @@ PlasmaParamList:
         defb    $00,$00
         defb    $04,$01
         defb    $fd
-        DefPointer Pal00
+        defb    $00
 
         defb    $ff,$00,$01,$ff,$02,$fe,$00,$02
         defb    $ff,$02,$01,$02,$fe,$01,$00,$00
@@ -201,7 +220,7 @@ PlasmaParamList:
         defb    $fd,$fe
         defb    $03,$03
         defb    $f8
-        DefPointer Pal08
+        defb    $08
 
         defb    $02,$03,$fd,$fd,$01,$fc,$fd,$00
         defb    $01,$03,$fd,$fe,$fe,$03,$00,$00
@@ -209,7 +228,7 @@ PlasmaParamList:
         defb    $fc,$fd
         defb    $06,$05
         defb    $fa
-        DefPointer Pal0b
+        defb    $0b
 LastPlasmaParam:
 
 ; Sine table contains pre-computed sine values converted to 8-bit integers.  

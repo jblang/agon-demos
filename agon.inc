@@ -164,12 +164,113 @@ SendScreenBufferLoop:
     jp nz, SendScreenBufferLoop
     ret
 
+    macro MakeTiles fg, bg
+    push bc
+    ld b, bg
+    call RGBA2222
+    ld b, a
+    ld c, fg
+    call RGBA2222
+    ld c, a
+    call MakeTiles
+    pop bc
+    endmacro
+
+; Generate bitmap tiles from Plascii-style palette
+; IX = pointer to palette
+; HL = pointer to RGB color definitions
+; DE = pointer to gradient tiles
+MakeGradient:
+    ld b, 4
+MakeGradientAsc:             ; load colors into lookup in ascending order
+    MakeTiles (ix+1), (ix+0)
+    inc ix
+    djnz MakeGradientAsc
+    ld b, 4
+MakeGradientDesc:            ; load colors into lookup in descending order
+    dec ix
+    MakeTiles (ix-1), (ix+0)
+    djnz MakeGradientDesc
+    ret
+
+; return the RGBA2222 equivalent of RGBA bytes
+; Params:
+;   HL = pointer to RGB888 format color table
+; Return:
+;   A = RGBA2222 value
+RGBA2222:
+    push hl
+    push de
+    ld de, 3
+RGBA2222Loop:
+    add hl, de
+    djnz RGBA2222Loop
+    ld a, (hl)
+    inc hl
+    and %11000000
+    ld d, a
+    ld a, (hl)
+    inc hl
+    and %00110000
+    rrca
+    rrca
+    ld a, 3
+    ld a, (hl)
+    inc hl
+    and %00001100
+    rrca
+    rrca
+    rrca
+    rrca
+    or d
+    or e
+    or %00000011
+    pop de
+    pop hl
+    ret
+
+MakeTiles:
+    push af
+    ex de, hl
+    ld a, 32    
+MakeTileLoop:
+    call MakeTile
+    call SendTile
+    dec a
+    jp nz, MakeTileLoop
+    ex de, hl
+    pop af
+    ret
+
+; send the tile currently in the temp buffer to the vdu
+; DE = bitmap ID
+SendTile:
+    push af
+    push hl
+    push bc
+    push de
+    call ClearBuffer
+    ld hl, TempTileBuffer
+    ld bc, TempTileBufferLength
+    call SendBufferBlock
+    call SelectBitmapBuffer
+    ld bc, 8
+    ld de, 8
+    ld h, VduBitmapFormatRGBA2222
+    call CreateBitmapFromBuffer
+    pop de
+    pop bc
+    pop hl
+    pop af
+
 ; make a color tile with specified foreground, and background colors
 ; HL = bitmap input buffer
-; DE = tile output buffer
 ; B = background color
 ; C = foreground color
 MakeTile:
+    push af
+    push hl
+    push de
     ld a, 8
     ld de, TempTileBuffer
 MakeTileRowLoop:
@@ -180,6 +281,9 @@ MakeTileRowLoop:
     inc hl
     dec a
     jp nz, MakeTileRowLoop
+    pop de
+    pop hl
+    pop af
     ret
 
 ; make a single row of bytes in a bitmap

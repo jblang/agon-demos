@@ -164,69 +164,88 @@ SendScreenBufferLoop:
     jp nz, SendScreenBufferLoop
     ret
 
-    macro MakeTiles fg, bg
-    push bc
-    ld b, bg
-    call RGBA2222
-    ld b, a
-    ld c, fg
-    call RGBA2222
-    ld c, a
-    call MakeTiles
-    pop bc
-    endmacro
-
-; Generate bitmap tiles from Plascii-style palette
-; IX = pointer to palette
-; HL = pointer to RGB color definitions
-; DE = pointer to gradient tiles
-MakeGradient:
-    ld b, 4
-MakeGradientAsc:             ; load colors into lookup in ascending order
-    MakeTiles (ix+1), (ix+0)
-    inc ix
-    djnz MakeGradientAsc
-    ld b, 4
-MakeGradientDesc:            ; load colors into lookup in descending order
-    dec ix
-    MakeTiles (ix-1), (ix+0)
-    djnz MakeGradientDesc
+; round the accumulator to the top 2 most significant bits
+Round2MSB:
+    bit 5, a
+    jp nz, Round2MSBUp
+    and %11000000
+    ret
+Round2MSBUp:
+    and %11000000
+    add %01000000
+    ret nc
+    sub %01000000
     ret
 
 ; return the RGBA2222 equivalent of RGBA bytes
 ; Params:
 ;   HL = pointer to RGB888 format color table
+;   DE = pointer to RGBA2222 format buffer
+;   B = number of colors to convert
 ; Return:
 ;   A = RGBA2222 value
-RGBA2222:
-    push hl
+MakeRGBA2222:
     push de
-    ld de, 3
-RGBA2222Loop:
-    add hl, de
-    djnz RGBA2222Loop
     ld a, (hl)
     inc hl
-    and %11000000
+    call Round2MSB
     ld d, a
     ld a, (hl)
     inc hl
-    and %00110000
+    call Round2MSB
+    or a
     rrca
     rrca
-    ld a, 3
+    ld e, a
     ld a, (hl)
     inc hl
-    and %00001100
+    call Round2MSB
+    or a
     rrca
     rrca
     rrca
     rrca
     or d
     or e
-    or %00000011
+    or $03                  ; alpha
     pop de
+    ld (de), a
+    inc de
+    djnz MakeRGBA2222
+    ret
+
+    macro MakePair fg, bg
+    push hl
+    ld e, fg
+    add hl, de
+    ld a, (hl)
+    ld (iy+0), a
     pop hl
+    push hl
+    ld e, bg
+    add hl, de
+    ld a, (hl)
+    ld (iy+8), a
+    pop hl
+    inc iy    
+    endmacro
+
+; Generate foreground and background pairs from Plascii-style palette
+; HL = pointer to RGBA2222 color definitions
+; IX = pointer to palette
+; IY = pointer to output buffer
+MakeColorPairs:
+    ld de, 0
+    ld b, 5
+MakeColorPairsAsc:             ; load colors into lookup in ascending order
+    MakePair (ix+1), (ix+0)
+    inc ix
+    djnz MakeColorPairsAsc
+    ld b, 4
+MakeColorPairsDesc:            ; load colors into lookup in descending order
+    dec ix
+    MakePair (ix-1), (ix+0)
+    djnz MakeColorPairsDesc
     ret
 
 MakeTiles:

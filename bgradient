@@ -1,3 +1,0 @@
-ez80asm gradient.asm
-load gradient.bin
-run

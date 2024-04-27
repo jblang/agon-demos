@@ -287,7 +287,7 @@ ShowParameterLoop:
         inc     hl
         push    hl
         push    bc
-        call    HexOut
+        call    HexByte
         call    Space
         pop     bc
         pop     hl

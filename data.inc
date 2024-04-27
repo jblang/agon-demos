@@ -95,7 +95,7 @@ C64PaletteRGBCount: equ C64PaletteRGBLength / C64PaletteRGBStride
 
 ; mapping of C64 colors to nearest approximation on TMS9918A
 C64PaletteTMS:
-    .db $01
+    .db $01     ; black
     .db $0f     ; white
     .db $06     ; red
     .db $07     ; cyan

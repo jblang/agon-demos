@@ -34,10 +34,11 @@
         endmacro
 
 
-; CharOut must be defined elsewhere for HexOut to work
+; CharOut must be defined elsewhere for HexByte and HexBytes to work
 
-; Output A in hexadecimal
-HexOut:
+; Output a byte in hex
+;       A = byte to output
+HexByte:
         push    af
         rra
         rra
@@ -48,6 +49,17 @@ HexOut:
         pop     af
         call    HexNybble
         jp      CharOut
+
+; Output byte buffer in hex
+;       HL = address of byte buffer
+;       B = length of byte buffer
+HexBytes:
+        ld      a, (hl)
+        call    HexByte
+        call    Space
+        inc     hl
+        djnz    HexBytes
+        ret
 
 ; convert lower nybble of A to hex (also in A)
 ; from http://map.grauw.nl/sources/external/z80bits.html#5.1

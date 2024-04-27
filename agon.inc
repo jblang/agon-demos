@@ -214,7 +214,8 @@ MakeRGBA2222:
     djnz MakeRGBA2222
     ret
 
-    macro MakePair fg, bg
+    ; Store the foreground + background pair in a color ramp
+    macro MakeColorPair fg, bg
     push hl
     ld e, fg
     add hl, de
@@ -234,18 +235,18 @@ MakeRGBA2222:
 ; HL = pointer to RGBA2222 color definitions
 ; IX = pointer to palette
 ; IY = pointer to output buffer
-MakeColorPairs:
+MakeColorRamp:
     ld de, 0
-    ld b, 5
-MakeColorPairsAsc:             ; load colors into lookup in ascending order
-    MakePair (ix+1), (ix+0)
-    inc ix
-    djnz MakeColorPairsAsc
     ld b, 4
-MakeColorPairsDesc:            ; load colors into lookup in descending order
+MakeColorRampAsc:             ; load colors into lookup in ascending order
+    MakeColorPair (ix+1), (ix+0)
+    inc ix
+    djnz MakeColorRampAsc
+    ld b, 4
+MakeColorRampDesc:            ; load colors into lookup in descending order
     dec ix
-    MakePair (ix-1), (ix+0)
-    djnz MakeColorPairsDesc
+    MakeColorPair (ix-1), (ix+0)
+    djnz MakeColorRampDesc
     ret
 
 MakeTiles:
@@ -282,16 +283,17 @@ SendTile:
     pop hl
     pop af
 
+TempTileBuffer:
+    defs 64
+TempTileBufferLength: equ $ - TempTileBuffer
+
 ; make a color tile with specified foreground, and background colors
 ; HL = bitmap input buffer
+; DE = tile output buffer
 ; B = background color
 ; C = foreground color
 MakeTile:
-    push af
-    push hl
-    push de
     ld a, 8
-    ld de, TempTileBuffer
 MakeTileRowLoop:
     push af
     ld a, (hl)
@@ -300,17 +302,16 @@ MakeTileRowLoop:
     inc hl
     dec a
     jp nz, MakeTileRowLoop
-    pop de
-    pop hl
-    pop af
     ret
 
 ; make a single row of bytes in a bitmap
-; HL = output pointer
+; DE = output pointer
 ; A = bitmap
 ; B = background color in RGBA2222 format
 ; C = foreground color in RGBA2222 format
 MakeTileRow:
+    ex de, hl
+    push de
     ld d, 8
 MakeTileColLoop:
     add a, a
@@ -321,10 +322,9 @@ MakeTileNextCol:
     inc hl
     dec d
     jp nz, MakeTileColLoop
+    pop de
+    ex de, hl
     ret
-TempTileBuffer:
-    defs 64
-TempTileBufferLength: equ $ - TempTileBuffer
 
 ; clear a buffer
 ; DE = buffer id
@@ -428,12 +428,12 @@ LoadColorTable:
     pop ix                      ; palette address is now in ix
     ld de, ColorTable
     ld b, 4
-LoadColorTableAsc:             ; load colors into lookup in ascending order
+LoadColorTableAsc:              ; load colors into lookup in ascending order
     LoadColors (ix+1), (ix+0)
     inc ix
     djnz LoadColorTableAsc
     ld b, 4
-LoadColorTableDesc:            ; load colors into lookup in descending order
+LoadColorTableDesc:             ; load colors into lookup in descending order
     LoadColors (ix-1), (ix+0)
     dec ix
     djnz LoadColorTableDesc
@@ -448,7 +448,7 @@ ShowPalettesLoop:
     push bc
     ld a, ColorPaletteCount
     sub b
-    call HexOut
+    call HexByte
     call Space
     call LoadColorTable
     call ShowGradient

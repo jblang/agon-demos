@@ -1,19 +1,21 @@
     include "agon.inc"
     include "utility.inc"
     include "data.inc"
+    include "gradient.inc"
 
 Main:
     call Init
     call RGBA2222Test
-    call ColorRampTest
     call TileTest
+    call ColorRampTest
+    call GradientTest
     jp Exit
 
 Banner:
     defb "Plasma Test Suite by J.B. Langston", CR, LF, CR, LF, EOS
 
 Init:
-    ld c, 0                 ; 640x480 16 colors
+    ld c, 3                     ; 640x480 16 colors
     call VdpMode
     call ClearScreen
     ld hl, Banner
@@ -52,7 +54,7 @@ RGBA2222Buffer:
 RGBA2222BufferLength: equ $ - RGBA2222Buffer
 
 ColorRampTestMessage:
-    defb "Color Ramp for Palette:", CR, LF
+    defb "Color Ramp Generation Test:", CR, LF
     defb "FG: ", EOS
 
 ColorRampBGMessage:
@@ -61,11 +63,10 @@ ColorRampBGMessage:
 ColorRampTest:
     ld hl, ColorRampTestMessage
     call StringOut
-    ld hl, RGBA2222Buffer
+    ld hl, C64PaletteRGBA2222
     ld ix, ColorPalettes
-    ld iy, ColorRampBuffer
     call MakeColorRamp
-    ld hl, ColorRampBuffer
+    ld hl, TempColorBuffer
     ld b, 8
     call HexBytes
     push hl
@@ -77,9 +78,6 @@ ColorRampTest:
     call NewLine
     call NewLine
     ret
-
-ColorRampBuffer:
-    defs 16
 
 TileTestMessage:
     defb "Tile Generation Test:", CR, LF, EOS
@@ -108,6 +106,14 @@ TileTestLoop:
     call NewLine
     ret
 
-
+GradientTest:
+    ld de, 0
+    call LoadGradientBitmaps
+    ld de, 0
+    call SetGradient
+    call ShowGradientBitmaps
+    call ResetBitmapChars
+    call NewLine
+    ret
 
 ScreenBuffer:   equ $ + ScreenSize

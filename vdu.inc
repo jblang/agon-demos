@@ -4,7 +4,7 @@
 ; Permission is hereby granted, free of charge, to any person obtaining a 
 ; copy of this software and associated documentation files (the "Software"), 
 ; to deal in the Software without restriction, including without limitation 
-; the rights to use, copy, modify, merge, publilh, distribute, sublicense, 
+; the rights to use, copy, modify, merge, publish, distribute, sublicense, 
 ; and/or sell copies of the Software, and to permit persons to whom the 
 ; Software is furnished to do so, subject to the following conditions:
 ; 
@@ -19,18 +19,10 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
-; convenience macros
-    macro SendByteA
-        rst.lil $10
-    endmacro
-
+; Convenience macros
     macro SendByte value
         ld a, value
         rst.lil $10
-    endmacro
-
-    macro SendBytesHLBC
-        rst.lil $18
     endmacro
 
     macro SendBytes addr, length
@@ -47,8 +39,7 @@
     endmacro
 
 ; VDU commands
-
-; https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/VDU-Commands.md
 VduNull: equ 0
 VduPrinterChar: equ 1
 VduPrinterOn: equ 2
@@ -86,22 +77,42 @@ VduCursorHome: equ 30
 VduCursorMove: equ 31
 VduBackspace: equ 127
 
-; https://agonconsole8.github.io/agon-docs/vdp/System-Commands/
-VduSystem: equ 0
-VduVsyncBufferSwap: equ $C3
-VduMapCharToBitmap: equ $92
-
-; https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/#vdu-23-1-n-cursor-control
+; Cursor display Commands
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/VDU-Commands.md#vdu-23-1-n-cursor-control
 VduCursorDisplay: equ 1
 VduCursorHide: equ 0
 VduCursorShow: equ 1
 VduCursorSteady: equ 2
 VduCursorFlash: equ 3
 
-; https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/#vdu-23-16-setting-mask-define-cursor-movement-behaviour
+; Cursor movement commands
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/VDU-Commands.md#vdu-23-16-setting-mask-define-cursor-movement-behaviour
 VduCursorMovement: equ 16
 VduScrollProtection: equ %00000001
 
+; System commands
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/System-Commands.md
+VduSystem: equ 0
+VduResetChars: equ $91
+VduMapCharToBitmap: equ $92
+VduVsyncBufferSwap: equ $C3
+
+; Context management commands
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Context-Management-API.md
+VduContextManagement: equ $C8
+VduContextSelectStack: equ 0
+VduContextDeleteStack: equ 1
+VduContextReset: equ 2
+
+;VduContextResetGraphicsPainting: equ 0
+;VduContextResetGraphicsPositioning: equ 1
+;VduContextResetTextPainting: equ 2
+;VduContextResetTextCursorVisuals: equ 3
+;VduContextResetTextCursorBehavior: equ 4
+;VduContextResetFonts: equ 5
+VduContextResetBitmapChars: equ 6
+
+; Buffer commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Buffered-Commands-API.md
 VduBuffer: equ $A0
 VduBufferWriteBlock: equ 0
@@ -121,133 +132,383 @@ VduBitmapFormatRGBA2222: equ 1
 VduBitmapFormatMono: equ 2
 VduBitmapFormatNative: equ 3
 
-; standard control characters
+; Standard control characters
 CR:	    equ     0dh
 LF:	    equ     0ah
 EOS:    equ     0       ; end of string (null terminated)
 
-; output a character
-; A = character to output
+; Output a character
+; Params:
+;   A = character to output
 CharOut:
     rst.lil $10
     ret
 
 ; output a string terminated by EOS
-; HL = address of string
+; Params:
+;   HL = address of string
 StringOut:
+    push af
+    push bc
     ld bc, 0
     ld a, EOS
-    ; fallthrough
+    call BytesOut
+    pop bc
+    pop af
+    ret
 
-; output a specified number of bytes
-; HL = address of bytes
-; BC = byte count
+; Output a specified number of bytes
+; Params:
+;   HL = address of bytes
+;   BC = byte count
 BytesOut:
-    SendBytesHLBC
+    rst.lil $18
     ret
 
-; output a space
+; Output a space
 Space:
+    push af
     SendByte ' '
+    pop af
     ret
 
-; output a new line
+; Output a new line
 NewLine:
+    push af
     SendByte CR
     SendByte LF
+    pop af
     ret
     
-; set the VDP mode
-; C = mode number
+; Set the VDP mode
+; Params:
+;   C = mode number
 VdpMode:
+    push af
     SendByte VduSetMode
     SendByte c
+    pop af
     ret
 
-; clear the screen
+; Clear the screen
 ClearScreen:
+    push af
     SendByte VduClearScreen
+    pop af
     ret
 
-; move to X, Y coordinates
-; C = x coordinate
-; B = Y coordinate
+; Move to X, Y coordinates
+; Params:
+;   C = x coordinate
+;   B = Y coordinate
 MoveTo:
+    push af
     SendByte VduCursorMove
     SendByte c
     SendByte b
+    pop af
     ret
 
-; set default text color
+; Set default text color
 DefaultTextColor:
+    push bc
     ld b, 0                     ; white on black in default palette
     ld c, 15
-    ; fallthrough
+    call TextColor
+    pop bc
+    ret
 
-; set text color
-; C = pen (foreground) color
-; B = paper (background) color
+; Set text color
+; Params:
+;   C = foreground color
+;   B = background color
 TextColor:
+    push af
     SendByte VduTextColor       ; pen (foreground)
     SendByte c
     SendByte VduTextColor       ; paper (background)
     ld a, b
     add VduBackgroundColor
     rst.lil $10
+    pop af
     ret
 
-; hide the text cursor
+; Hide the text cursor
 TextCursorHide:
+    push af
     SendByte VduCommand
     SendByte VduCursorDisplay
     SendByte VduCursorHide
+    pop af
     ret
 
-; show the text cursor
+; Show the text cursor
 TextCursorShow:
+    push af
     SendByte VduCommand
     SendByte VduCursorDisplay
     SendByte VduCursorShow
+    pop af
     ret
 
 ; Set the specified cursor movement bits
-; C = bits to set
+; Params:
+;   C = bits to set
 SetCursorMovementBit:
+    push af
     SendByte VduCommand
     SendByte VduCursorMovement
     ld a, c
     cpl
-    SendByteA
+    SendByte a
     cpl
-    SendByteA
+    SendByte a
+    pop af
     ret
 
-; clear the specified cursor movement bits
-; C = bits to clear
+; Clear the specified cursor movement bits
+; Params:
+;   C = bits to clear
 ClearCursorMovementBit:
+    push af
     SendByte VduCommand
     SendByte VduCursorMovement
     ld a, c
     cpl
-    SendByteA
+    SendByte a
     xor a
-    SendByteA
+    SendByte a
+    pop af
     ret
 
-; prevent the screen from scrolling when the last character is written
+; Prevent the screen from scrolling when the last character is written
 EnableScrollProtection:
+    push bc
     ld c, VduScrollProtection
-    jp SetCursorMovementBit
-
-; allow the screen to scroll when the last character is written
-DisableScrollProtection:
-    ld c, VduScrollProtection
-    jp ClearCursorMovementBit
+    call SetCursorMovementBit
+    pop bc
     ret
 
-; wait for vsync (and swap buffers if using a buffered video mode)
+; Allow the screen to scroll when the last character is written
+DisableScrollProtection:
+    push bc
+    ld c, VduScrollProtection
+    call ClearCursorMovementBit
+    pop bc
+    ret
+
+; Wait for vsync (and swap buffers if using a buffered video mode)
 WaitVSync:
+    push af
     SendByte VduCommand
     SendByte VduSystem
     SendByte VduVsyncBufferSwap
+    pop af
     ret
+
+; Round the accumulator to the top 2 most significant bits
+Round2MSB:
+    bit 5, a
+    jp nz, Round2MSBUp
+    and %11000000
+    ret
+Round2MSBUp:
+    and %11000000
+    add %01000000
+    ret nc
+    sub %01000000
+    ret
+
+; return the RGBA2222 equivalent of RGBA bytes
+; Params:
+;   HL = pointer to RGB888 format input buffer
+;   DE = pointer to RGBA2222 format output buffer
+;   B = number of colors to convert
+; Return:
+;   A = RGBA2222 value
+MakeRGBA2222:
+    push de
+    ld a, (hl)
+    inc hl
+    call Round2MSB
+    rrca
+    rrca
+    rrca
+    rrca
+    rrca
+    rrca
+    ld d, a
+    ld a, (hl)
+    inc hl
+    call Round2MSB
+    or a
+    rrca
+    rrca
+    rrca
+    rrca
+    ld e, a
+    ld a, (hl)
+    inc hl
+    call Round2MSB
+    or a
+    rrca
+    rrca
+    or d
+    or e
+    or $c0                  ; alpha
+    pop de
+    ld (de), a
+    inc de
+    djnz MakeRGBA2222
+    ret
+
+; Clear a buffer
+; Params:
+;   DE = buffer id
+ClearBuffer:
+    push af
+    SendByte VduCommand
+    SendByte VduSystem
+    SendByte VduBuffer
+    SendByte e                  ; buffer id
+    SendByte d
+    SendByte VduBufferClear
+    pop af
+    ret
+
+; Send a block of data to a buffer
+; Params:
+;   DE = buffer id
+;   BC = buffer length
+;   HL = buffer data
+SendBufferBlock:
+    push af
+    push hl
+    push bc
+    SendByte VduCommand
+    SendByte VduSystem
+    SendByte VduBuffer
+    SendByte e                  ; buffer id
+    SendByte d
+    SendByte VduBufferWriteBlock
+    SendByte c                  ; length
+    SendByte b
+SendBufferLoop:
+    SendByte (hl)
+    inc hl
+    dec bc
+    ld a, b
+    or c
+    jp nz, SendBufferLoop
+    pop bc
+    pop hl
+    pop af
+    ret
+
+; Select a bitmap using buffer ID
+; Params:
+;   DE = buffer id
+SelectBitmapBuffer:
+    push af
+    SendByte VduCommand
+    SendByte VduBitmap
+    SendByte VduBitmapSelectBuffer
+    SendByte e                  ; buffer id
+    SendByte d
+    pop af
+    ret
+
+; Create selected bitmap from buffer
+; Params:
+;   BC = width
+;   DE = height
+;   L = format
+CreateBitmapFromBuffer:
+    push af
+    SendByte VduCommand
+    SendByte VduBitmap
+    SendByte VduBitmapCreateBuffer
+    SendByte c                  ; width
+    SendByte b
+    SendByte e                  ; height
+    SendByte d
+    SendByte l                  ; format
+    pop af
+    ret
+
+; map character number to bitmap using buffer id
+; C = char
+; DE = bitmap id
+MapCharToBitmap: 
+    push af
+    SendByte VduCommand
+    SendByte VduSystem
+    SendByte VduMapCharToBitmap
+    SendByte c                  ; character number
+    SendByte e                  ; bitmap id
+    SendByte d
+    pop af
+    ret
+
+; Reset character to bitmap mappings
+ResetBitmapChars:
+    push bc
+    push de
+    ld c, 0
+    ld de, $ffff
+ResetBitmapCharLoop:
+    call MapCharToBitmap
+    inc c
+    jp nz, ResetBitmapCharLoop
+    pop de
+    pop bc
+    ret
+    ; VDP 2.8.0 and later
+    ;push af
+    ;SendByte VduCommand
+    ;SendByte VduSystem
+    ;SendByte VduContextManagement
+    ;SendByte VduContextReset
+    ;SendByte VduContextResetBitmapChars
+    ;SendByte $ff
+    ;pop af
+
+; send a character, escaped if necessary
+; A = char to send
+SendChar:
+    cp ' '                      ; check if it's a control char
+    jp nc, SendCharUnescaped    ; if not, send unescaped
+    push af
+    SendByte VduEscapeChar      ; if so, send escape command first
+    pop af
+SendCharUnescaped:
+    SendByte a
+    ret
+
+; Load a data table into the VDU
+; IX = table address
+; HL = entry prefix function (0 for none)
+; D = entry stride
+; E = entry count
+; BC = free for use in prefix function
+LoadTable:
+    call TablePrefix
+    push de
+LoadTableLoop:
+    ld a, (ix+0)
+    SendByte a
+    inc ix
+    dec d
+    jp nz, LoadTableLoop
+    pop de
+    dec e
+    jp nz, LoadTable
+    ret  
+
+; call table prefix function in HL, unless it is 0
+; HL = function pointer
+TablePrefix:
+    ld a, h
+    or l
+    ret z
+    jp (hl)

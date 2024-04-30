@@ -93,6 +93,25 @@ C64PaletteRGBStride:   equ $ - C64PaletteRGB
 C64PaletteRGBLength: equ $ - C64PaletteRGB
 C64PaletteRGBCount: equ C64PaletteRGBLength / C64PaletteRGBStride
 
+C64PaletteRGBA2222:
+    .db $c0             ; black
+    .db $ff             ; white
+    .db $c2             ; red
+    .db $fe             ; cyan
+    .db $e2             ; purple
+    .db $d8             ; green
+    .db $e0             ; blue
+    .db $df             ; yellow
+    .db $db             ; orange
+    .db $c6             ; brown
+    .db $d7             ; light red
+    .db $d5             ; dark grey
+    .db $d5             ; grey
+    .db $ce             ; light green
+    .db $f4             ; light blue
+    .db $ea             ; light grey
+C64PaletteRGBA2222Length: equ $ - C64PaletteRGBA2222
+
 ; mapping of C64 colors to nearest approximation on TMS9918A
 C64PaletteTMS:
     .db $01     ; black

@@ -48,6 +48,7 @@
 
         include "utility.inc"
         include "data.inc"
+        include "gradient.inc"
 
 ; =============================================================================
 ; constants
@@ -402,20 +403,7 @@ NextPalette:
         jp      c, LoadPalette          ; if not, load it
         xor     a                       ; if so, wrap around to the first one
         ld      (hl), a
-        ; fallthrough
-
-; Load the currently selected color palette
-LoadPalette:
-        ld      hl, ColorPalettes       ; calculate address of selected palette
-        ld      a, (ColorPalette)
-        or      a
-        jp      z, LoadColorTable
-        ld      de, ColorPaletteStride
-LoadPaletteLoop:
-        add     hl, de
-        dec     a
-        jp      nz, LoadPaletteLoop
-        jp      LoadColorTable
+        jp      LoadPalette
 
 
 ; CalcPlasmaStarts calculates the initial value for each tile by summing together 8 sine waves of

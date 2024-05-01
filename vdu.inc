@@ -473,15 +473,20 @@ ResetBitmapCharLoop:
     ;SendByte $ff
     ;pop af
 
+
+EscapeChar:
+    push af
+    SendByte VduEscapeChar      ; if so, send escape command first
+    pop af
+    ret
+
 ; send a character, escaped if necessary
 ; A = char to send
 SendChar:
     cp ' '                      ; check if it's a control char
-    jp nc, SendCharUnescaped    ; if not, send unescaped
-    push af
-    SendByte VduEscapeChar      ; if so, send escape command first
-    pop af
-SendCharUnescaped:
+    call c, EscapeChar
+    cp 127
+    call z, EscapeChar
     SendByte a
     ret
 

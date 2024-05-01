@@ -52,8 +52,9 @@ Entry:
 
     jp Main
 
+
 Exit:
-    call DefaultTextColor
+    call ResetBitmapChars
     pop iy                                  ; pop all registers back from the stack
     pop ix
     pop de
@@ -62,14 +63,15 @@ Exit:
     ld hl,0                                 ; load the MOS API return code (0) for no errors.
     ret                                     ; return to MOS
 
+
 ; platform specific graphics initialization
 InitGraphics:
-    ld c, 9
+    ld c, 8
     call VdpMode
-    call LoadGradient
-    call LoadC64Palette
-    call DefaultTextColor
+    call LoadAllGradients
     call TextCursorHide
+    ld de, 0
+    call SetGradient
     ;call EnableScrollProtection
     ret
 
@@ -85,36 +87,15 @@ GetKey:
     or a                        ; set z flag if key was pressed
     ret
 
-; load the C64 palette into agon palette
-LoadC64Palette:
-    ld ix, C64PaletteRGB
-    ld hl, PalettePrefix
-    ld c, 0
-    ld d, C64PaletteRGBStride
-    ld e, C64PaletteRGBCount
-    jp LoadTable
 
-PalettePrefix:
-    SendByte VduSetPalette
-    SendByte c
-    SendByte VduSetPaletteRGB
-    inc c
+; Wait for a keypress and return in A
+WaitKey:
+    call GetKey
+WaitKeyLoop:
+    call GetKey
+    jp z, WaitKeyLoop
     ret
 
-; load the gradient table into custom chracters
-LoadGradient:
-    ld ix, Gradient
-    ld hl, GradientPrefix
-    ld c, GradientStart
-    ld d, GradientStride
-    ld e, GradientCount
-    jp LoadTable
-
-GradientPrefix:
-    SendByte VduCustomChar
-    SendByte c
-    inc c
-    ret
 
 ; Send all the tiles in the screen buffer
 SendScreenBuffer:
@@ -123,11 +104,7 @@ SendScreenBuffer:
     ld bc, ScreenSize-1
 SendScreenBufferLoop:
     ld a, (hl)
-    push bc
-    push hl
-    call ShowTile
-    pop hl
-    pop bc
+    call SendChar
     inc hl
     dec bc
     ld a, b
@@ -136,118 +113,9 @@ SendScreenBufferLoop:
     ret
 
 
-; macro to allow loading colors in both ascending and descending order
-    macro LoadColors pen, paper
-        ld a, pen
-        ld (de), a
-        inc de
-        ld a, paper
-        add 128
-        ld (de), a
-        inc de
-    endmacro
-
-; Load a Plascii-style palette into the color lookup table
-; HL = address of palette to load
-LoadColorTable:
-    push hl
-    pop ix                      ; palette address is now in ix
-    ld de, ColorTable
-    ld b, 4
-LoadColorTableAsc:              ; load colors into lookup in ascending order
-    LoadColors (ix+1), (ix+0)
-    inc ix
-    djnz LoadColorTableAsc
-    ld b, 4
-LoadColorTableDesc:             ; load colors into lookup in descending order
-    LoadColors (ix-1), (ix+0)
-    dec ix
-    djnz LoadColorTableDesc
-    ret
-
-; Output gradients for all the palettes one after another to demonstrate them
-ShowPalettes:
-    ld ix, ColorPalettes
-    ld b, ColorPaletteCount
-ShowPalettesLoop:
-    push ix
-    push bc
-    ld a, ColorPaletteCount
-    sub b
-    call HexByte
-    call Space
-    call LoadColorTable
-    call ShowGradient
-    call DefaultTextColor
-    call NewLine
-    pop bc
-    pop ix
-    ld de, ColorPaletteStride
-    add ix, de
-    djnz ShowPalettesLoop
-    ret
-
-; Display a gradient to showcase the current palette
-ShowGradient:
-    ld a, 0
-ShowGradientLoop:
-    push af
-    call ShowTile
-    pop af
-    inc a
-    jp nz, ShowGradientLoop
-    ret
-
-; Show the appropriate gradient tile with the appropriate pen and paper color
-; A = tile number
-ShowTile:
-    push af
-    and GradientCount - 1   ; bottom bits select the character
-    add GradientStart       ; plus starting character
-    ld (TileChar), a        ; save tile character
-    pop af
-    and 256 - GradientCount ; top bits select the colors
-    rrca                    ; shift into correct positon
-    rrca
-    rrca
-    rrca
-    ld hl, CurrentColor
-    cp (hl)                 ; check if this tile is already using the current color
-    jp nz, ShowTileColor    ; if not, output color control codes
-    ld a, (TileChar)        ; if so, just output the character
-    rst.lis $10
-    ret
-ShowTileColor:
-    ld (hl), a              ; save the current logical color
-    ld hl, ColorTable       ; look up the pen and paper color based on logical color
-    ld b, 0
-    ld c, a
-    add hl, bc
-    ld a, (hl)
-    ld (TilePen), a         ; save them in the buffer
-    inc hl
-    ld a, (hl)
-    ld (TilePaper), a
-    SendBytes TileBuffer, TileBufferLength  ; send the tile buffer to the VDP
-    ret
-
-ColorTable:
-    .ds 16
-CurrentColor:
-    .db $ff                 ; ff is never a valid logical color
-TileBuffer:
-    .db VduTextColor
-TilePen:
-    .db 15                  ; white in default palette
-    .db VduTextColor
-TilePaper:
-    .db VduBackgroundColor  ; black in defualt palette
-TileChar:
-    .db GradientStart
-TileBufferLength: equ $ - TileBuffer
-
 EnableInterrupt:
     ret                     ; no interrupt needed on Agon
+
 
 ShowHelp:
     ret                     ; figure out how to do this later

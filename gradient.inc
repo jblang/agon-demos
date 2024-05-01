@@ -41,6 +41,9 @@ TempColorBuffer:
     defs SegmentCount*2
 TempColorBufferLength: equ $ - TempColorBuffer
 
+BitmapCounter:
+    defw 0
+
 
 ; =============================================================================
 ; Macros
@@ -109,33 +112,46 @@ SetGradientLoop:
     ret
 
 
+LoadPalette:
+    ld de, 0
+    ld a, (ColorPalette)
+    ld d, a
+    call SetGradient
+    inc a
+    ret
+
+
 ; Load a single segment of the gradient with specified foreground/background color
 ; Params:
-;   DE = bitmap number
 ;   B = background color
 ;   C = foreground color
 LoadGradientSegment:
     ld hl, Gradient
     ld a, GradientCount
 LoadGradientSegmentLoop:
-    push de
     ld de, TempTileBuffer
     call MakeTile
-    pop de
     push hl
     push bc
     ld hl, TempTileBuffer
     ld bc, TempTileBufferLength
+    ld de, (BitmapCounter)
     call SendTile
     pop bc
     pop hl
     inc de
+    ld (BitmapCounter), de
     dec a
     jp nz, LoadGradientSegmentLoop
     ret
 
 ; Load bitmaps for gradient of the currently loaded colors
+; Params:
+;   DE = starting bitmap number
+;   HL = pointer to ARGB2222 palette
+;   IX = pointer to color scheme
 LoadGradientBitmaps:
+    call MakeColorRamp
     ld ix, TempColorBuffer
     ld b, 8
 LoadGradientBitmapsLoop:
@@ -148,6 +164,30 @@ LoadGradientBitmapsLoop:
     djnz LoadGradientBitmapsLoop
     ret
 
+
+LoadAllGradientsMessage:
+    defb "Loading color gradients", EOS
+
+LoadAllGradients:
+    ld hl, LoadAllGradientsMessage
+    call StringOut
+    ld hl, C64PaletteRGBA2222
+    ld ix, ColorPalettes
+    ld b, ColorPaletteCount
+LoadAllGradientsLoop:
+    push bc
+    push hl
+    push ix
+    call LoadGradientBitmaps
+    pop ix
+    pop hl
+    ld bc, ColorPaletteStride
+    add ix, bc
+    SendByte '.'
+    pop bc
+    djnz LoadAllGradientsLoop
+    call NewLine
+    ret
 
 ; Send the 8x8 RGBA2222 tile bitmap from the source buffer to the VDP
 ; Params:

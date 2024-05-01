@@ -146,6 +146,18 @@ if !MSX
 endif
         ret
 
+; Load the currently selected color palette
+LoadPalette:
+        ld      hl, ColorPalettes       ; calculate address of selected palette
+        ld      a, (ColorPalette)
+        or      a
+        jp      z, LoadColorTable
+        ld      de, ColorPaletteStride
+LoadPaletteLoop:
+        add     hl, de
+        dec     a
+        jp      nz, LoadPaletteLoop
+        ; fallthrough
 
 ; LoadColorTable sets up color table using current palette
 ;

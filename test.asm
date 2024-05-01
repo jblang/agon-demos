@@ -106,13 +106,32 @@ TileTestLoop:
     call NewLine
     ret
 
+GradientTestMessage:
+    defb "Color Gradient Test:"
+
+GradientCountMessage:
+    defb " <- Gradient ", EOS
+
+GradientNextMessage:
+    defb "; press any key...", CR, LF, CR, LF, EOS
+
 GradientTest:
+    call LoadAllGradients
     ld de, 0
-    call LoadGradientBitmaps
-    ld de, 0
+    ld b, ColorPaletteCount
+GradientTestLoop:
     call SetGradient
     call ShowGradientBitmaps
     call ResetBitmapChars
+    ld hl, GradientCountMessage
+    call StringOut
+    ld a, d
+    call HexByte
+    ld hl, GradientNextMessage
+    call StringOut
+    call WaitKey
+    inc d
+    djnz GradientTestLoop
     call NewLine
     ret
 

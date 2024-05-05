@@ -79,7 +79,7 @@ PC     Output      Line
 040000             0035*       .assume adl=1                           ; ez80 ADL memory mode
 040000             0036*       .org $40000                             ; load code here
 040000             0037*   
-040000 C3 5A 02 04 0038*       jp Entry                                ; jump to start of code
+040000 C3 59 02 04 0038*       jp Entry                                ; jump to start of code
 040004             0039*   
 040004 FF FF FF FF 0040*       .align 64                               ; MOS header
        FF FF FF FF 
@@ -465,7 +465,7 @@ PC     Output      Line
 040045             0092**  
 040045             0093**  ; System commands
 040045             0094**  ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/System-Commands.md
-040045             0095**  VduSystem: equ 0
+040045             0095**  VduSystemCommand: equ 0
 040045             0096**  VduResetChars: equ $91
 040045             0097**  VduMapCharToBitmap: equ $92
 040045             0098**  VduVsyncBufferSwap: equ $C3
@@ -487,13 +487,13 @@ PC     Output      Line
 040045             0114**  
 040045             0115**  ; Buffer commands
 040045             0116**  ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Buffered-Commands-API.md
-040045             0117**  VduBuffer: equ $A0
+040045             0117**  VduBufferCommand: equ $A0
 040045             0118**  VduBufferWriteBlock: equ 0
 040045             0119**  VduBufferCall: equ 1
 040045             0120**  VduBufferClear: equ 2
 040045             0121**  
 040045             0122**  ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Bitmaps-API.md
-040045             0123**  VduBitmap: equ 27
+040045             0123**  VduBitmapCommand: equ 27
 040045             0124**  VduBitmapSelect: equ 0
 040045             0125**  VduBitmapLoad: equ 1
 040045             0126**  VduBitmapSolidColor: equ 2
@@ -728,7 +728,7 @@ PC     Output      Line
 040101             0303**      SendByte VduCommand
 040101 3E 17       0001**M         ld a, value
 040103 5B D7       0002**M         rst.lil $10
-040105             0304**      SendByte VduSystem
+040105             0304**      SendByte VduSystemCommand
 040105 3E 00       0001**M         ld a, value
 040107 5B D7       0002**M         rst.lil $10
 040109             0305**      SendByte VduVsyncBufferSwap
@@ -801,10 +801,10 @@ PC     Output      Line
 04014E             0370**      SendByte VduCommand
 04014E 3E 17       0001**M         ld a, value
 040150 5B D7       0002**M         rst.lil $10
-040152             0371**      SendByte VduSystem
+040152             0371**      SendByte VduSystemCommand
 040152 3E 00       0001**M         ld a, value
 040154 5B D7       0002**M         rst.lil $10
-040156             0372**      SendByte VduBuffer
+040156             0372**      SendByte VduBufferCommand
 040156 3E A0       0001**M         ld a, value
 040158 5B D7       0002**M         rst.lil $10
 04015A             0373**      SendByte e                  ; buffer id
@@ -827,10 +827,10 @@ PC     Output      Line
 040167             0384**      SendByte VduCommand
 040167 3E 17       0001**M         ld a, value
 040169 5B D7       0002**M         rst.lil $10
-04016B             0385**      SendByte VduSystem
+04016B             0385**      SendByte VduSystemCommand
 04016B 3E 00       0001**M         ld a, value
 04016D 5B D7       0002**M         rst.lil $10
-04016F             0386**      SendByte VduBuffer
+04016F             0386**      SendByte VduBufferCommand
 04016F 3E A0       0001**M         ld a, value
 040171 5B D7       0002**M         rst.lil $10
 040173             0387**      SendByte e                  ; buffer id
@@ -857,10 +857,10 @@ PC     Output      Line
 040182             0402**      SendByte VduCommand
 040182 3E 17       0001**M         ld a, value
 040184 5B D7       0002**M         rst.lil $10
-040186             0403**      SendByte VduSystem
+040186             0403**      SendByte VduSystemCommand
 040186 3E 00       0001**M         ld a, value
 040188 5B D7       0002**M         rst.lil $10
-04018A             0404**      SendByte VduBuffer
+04018A             0404**      SendByte VduBufferCommand
 04018A 3E A0       0001**M         ld a, value
 04018C 5B D7       0002**M         rst.lil $10
 04018E             0405**      SendByte e                  ; buffer id
@@ -900,7 +900,7 @@ PC     Output      Line
 0401AE             0427**      SendByte VduCommand
 0401AE 3E 17       0001**M         ld a, value
 0401B0 5B D7       0002**M         rst.lil $10
-0401B2             0428**      SendByte VduBitmap
+0401B2             0428**      SendByte VduBitmapCommand
 0401B2 3E 1B       0001**M         ld a, value
 0401B4 5B D7       0002**M         rst.lil $10
 0401B6             0429**      SendByte VduBitmapSelectBuffer
@@ -925,7 +925,7 @@ PC     Output      Line
 0401C3             0442**      SendByte VduCommand
 0401C3 3E 17       0001**M         ld a, value
 0401C5 5B D7       0002**M         rst.lil $10
-0401C7             0443**      SendByte VduBitmap
+0401C7             0443**      SendByte VduBitmapCommand
 0401C7 3E 1B       0001**M         ld a, value
 0401C9 5B D7       0002**M         rst.lil $10
 0401CB             0444**      SendByte VduBitmapCreateBuffer
@@ -957,7 +957,7 @@ PC     Output      Line
 0401E1             0458**      SendByte VduCommand
 0401E1 3E 17       0001**M         ld a, value
 0401E3 5B D7       0002**M         rst.lil $10
-0401E5             0459**      SendByte VduSystem
+0401E5             0459**      SendByte VduSystemCommand
 0401E5 3E 00       0001**M         ld a, value
 0401E7 5B D7       0002**M         rst.lil $10
 0401E9             0460**      SendByte VduMapCharToBitmap
@@ -991,1115 +991,1094 @@ PC     Output      Line
 04020C             0480**      ; VDP 2.8.0 and later
 04020C             0481**      ;push af
 04020C             0482**      ;SendByte VduCommand
-04020C             0483**      ;SendByte VduSystem
+04020C             0483**      ;SendByte VduSystemCommand
 04020C             0484**      ;SendByte VduContextManagement
 04020C             0485**      ;SendByte VduContextReset
 04020C             0486**      ;SendByte VduContextResetBitmapChars
 04020C             0487**      ;SendByte $ff
 04020C             0488**      ;pop af
 04020C             0489**  
-04020C             0490**  ; count the number of control chars in a buffer
+04020C             0490**  ; copy the characters in one buffer to another, escaping as needed
 04020C             0491**  ; Params:
-04020C             0492**  ;   HL = buffer address
-04020C             0493**  ;   BC = buffer length
-04020C             0494**  ; Returns:
-04020C             0495**  ;   DE = number of escape chars
-04020C             0496**  CountControl:
-04020C 11 00 00 00 0497**      ld de, 0
-040210             0498**  CountControlLoop:
-040210 7E          0499**      ld a, (hl)
-040211 FE 20       0500**      cp ' '                      ; check if it's a control char
-040213 D2 1E 02 04 0501**      jp nc, CountControlSkip
-040217 FE 7F       0502**      cp 127
-040219 C2 1E 02 04 0503**      jp nz, CountControlSkip
-04021D 13          0504**      inc de                      ; if so, increment counter
-04021E             0505**  CountControlSkip:               ; if not, move to next char
-04021E 23          0506**      inc hl
-04021F 0B          0507**      dec bc
-040220 79          0508**      ld a, c
-040221 B0          0509**      or b
-040222 C2 10 02 04 0510**      jp nz, CountControlLoop
-040226 C9          0511**      ret
-040227             0512**  
-040227             0513**  
-040227             0514**  ; send a character, escaped if necessary
-040227             0515**  ; A = char to send
-040227             0516**  SendChar:
-040227 FE 20       0517**      cp ' '                      ; check if it's a control char
-040229 D2 39 02 04 0518**      jp nc, SendCharNoEscape
-04022D FE 7F       0519**      cp 127
-04022F C2 39 02 04 0520**      jp nz, SendCharNoEscape
-040233 F5          0521**      push af                     ; if so, send escape char first
-040234             0522**      SendByte VduEscapeChar
-040234 3E 1B       0001**M         ld a, value
-040236 5B D7       0002**M         rst.lil $10
-040238 F1          0523**      pop af
-040239             0524**  SendCharNoEscape:               ; if not, just send char
-040239             0525**      SendByte a
-040239 7F          0001**M         ld a, value
-04023A 5B D7       0002**M         rst.lil $10
-04023C C9          0526**      ret
-04023D             0527**  
-04023D             0528**  ; Load a data table into the VDU
-04023D             0529**  ; IX = table address
-04023D             0530**  ; HL = entry prefix function (0 for none)
-04023D             0531**  ; D = entry stride
-04023D             0532**  ; E = entry count
-04023D             0533**  ; BC = free for use in prefix function
-04023D             0534**  LoadTable:
-04023D CD 56 02 04 0535**      call TablePrefix
-040241 D5          0536**      push de
-040242             0537**  LoadTableLoop:
-040242 DD 7E 00    0538**      ld a, (ix+0)
-040245             0539**      SendByte a
-040245 7F          0001**M         ld a, value
-040246 5B D7       0002**M         rst.lil $10
-040248 DD 23       0540**      inc ix
-04024A 15          0541**      dec d
-04024B C2 42 02 04 0542**      jp nz, LoadTableLoop
-04024F D1          0543**      pop de
-040250 1D          0544**      dec e
-040251 C2 3D 02 04 0545**      jp nz, LoadTable
-040255 C9          0546**      ret
-040256             0547**  
-040256             0548**  ; call table prefix function in HL, unless it is 0
-040256             0549**  ; HL = function pointer
-040256             0550**  TablePrefix:
-040256 7C          0551**      ld a, h
-040257 B5          0552**      or l
-040258 C8          0553**      ret z
-040259 E9          0554**      jp (hl)
-04025A             0045*   
-04025A             0046*   Entry:
-04025A F5          0047*       push af                                 ; store all the registers
-04025B C5          0048*       push bc
-04025C D5          0049*       push de
-04025D DD E5       0050*       push ix
-04025F FD E5       0051*       push iy
-040261             0052*   
-040261 C3 62 08 04 0053*       jp Main
-040265             0054*   
-040265             0055*   
-040265             0056*   Exit:
-040265 CD F8 01 04 0057*       call ResetBitmapChars
-040269 FD E1       0058*       pop iy                                  ; pop all registers back from the stack
-04026B DD E1       0059*       pop ix
-04026D D1          0060*       pop de
-04026E C1          0061*       pop bc
-04026F F1          0062*       pop af
-040270 21 00 00 00 0063*       ld hl,0                                 ; load the MOS API return code (0) for no errors.
-040274 C9          0064*       ret                                     ; return to MOS
-040275             0065*   
-040275             0066*   
-040275             0067*   ; platform specific graphics initialization
-040275             0068*   InitGraphics:
-040275 0E 08       0069*       ld c, 8
-040277 CD 6C 00 04 0070*       call VdpMode
-04027B CD EB 07 04 0071*       call LoadAllGradients
-04027F CD A8 00 04 0072*       call TextCursorHide
-040283 11 00 00 00 0073*       ld de, 0
-040287 CD 68 07 04 0074*       call SetGradient
-04028B             0075*       ;call EnableScrollProtection
-04028B C9          0076*       ret
-04028C             0077*   
-04028C             0078*   
-04028C             0079*   ; get a key press in A
-04028C             0080*   GetKey:
-04028C             0081*       MosCall mos_sysvars         ; get ix pointer to sysvars
-04028C 3E 08       0001*M          ld a, function
-04028E 49 CF       0002*M          rst.lis $08
-040290 DD 7E 18    0082*       ld a, (ix+sysvar_vkeydown)  ; get key state
-040293 B7          0083*       or a                        ; key is down; wait for it to be released
-040294 C2 8C 02 04 0084*       jp nz, GetKey
-040298 DD 7E 05    0085*       ld a, (ix+sysvar_keyascii)  ; load the ascii code of the key pressed
-04029B DD 36 05 00 0086*       ld (ix+sysvar_keyascii), 0  ; clear it for next time
-04029F B7          0087*       or a                        ; set z flag if key was pressed
-0402A0 C9          0088*       ret
-0402A1             0089*   
-0402A1             0090*   
-0402A1             0091*   ; Wait for a keypress and return in A
-0402A1             0092*   WaitKey:
-0402A1 CD 8C 02 04 0093*       call GetKey
-0402A5             0094*   WaitKeyLoop:
-0402A5 CD 8C 02 04 0095*       call GetKey
-0402A9 CA A5 02 04 0096*       jp z, WaitKeyLoop
-0402AD C9          0097*       ret
-0402AE             0098*   
-0402AE             0099*   
-0402AE             0100*   ; Send all the tiles in the screen buffer
-0402AE             0101*   SendScreenBuffer:
-0402AE 21 B0 16 04 0102*       ld hl, ScreenBuffer     ; calculate total length of buffer
-0402B2 01 AF 04 00 0103*       ld bc, ScreenSize-1
-0402B6 CD 0C 02 04 0104*       call CountControl
-0402BA 21 AF 04 00 0105*       ld hl, ScreenSize-1
-0402BE 19          0106*       add hl, de              ; add necessary escape chars to length
-0402BF E5          0107*       push hl
-0402C0 C1          0108*       pop bc                  ; total buffer length is in bc
-0402C1 03          0109*       inc bc                  ;
-0402C2 21 B0 16 04 0110*       ld hl, ScreenBuffer     ; start of screen bufer in hl
-0402C6 ED 5B 19 07 0111*       ld de, (BitmapCounter)  ; next buffer id after bitmaps in de
+04020C             0492**  ;   HL = source buffer address
+04020C             0493**  ;   DE = destination buffer address
+04020C             0494**  ;   BC = buffer length
+04020C             0495**  EscapeBuffer:
+04020C F5          0496**      push af
+04020D             0497**  EscapeBufferLoop:
+04020D 7E          0498**      ld a, (hl)                  ; check if current chracter needs escape
+04020E FE 20       0499**      cp ' '
+040210 DA 1A 02 04 0500**      jp c, EscapeBufferYes
+040214 FE 7F       0501**      cp 127
+040216 C2 1E 02 04 0502**      jp nz, EscapeBufferNo
+04021A             0503**  EscapeBufferYes:                ; yes, copy the escape character first
+04021A 3E 1B       0504**      ld a, VduEscapeChar
+04021C 12          0505**      ld (de), a
+04021D 13          0506**      inc de
+04021E             0507**  EscapeBufferNo:                 ; no, just copy the character
+04021E ED A0       0508**      ldi
+040220 EA 0D 02 04 0509**      jp pe, EscapeBufferLoop
+040224 F1          0510**      pop af
+040225 C9          0511**      ret
+040226             0512**  
+040226             0513**  ; send a character, escaped if necessary
+040226             0514**  ; A = char to send
+040226             0515**  EscapeChar:
+040226 FE 20       0516**      cp ' '                      ; check if A contains a control char
+040228 DA 32 02 04 0517**      jp c, EscapeCharYes
+04022C FE 7F       0518**      cp 127
+04022E C2 38 02 04 0519**      jp nz, EscapeCharNo
+040232             0520**  EscapeCharYes:                  ; if so, send escape char first
+040232 F5          0521**      push af
+040233             0522**      SendByte VduEscapeChar
+040233 3E 1B       0001**M         ld a, value
+040235 5B D7       0002**M         rst.lil $10
+040237 F1          0523**      pop af
+040238             0524**  EscapeCharNo:                   ; if not, just send char
+040238             0525**      SendByte a
+040238 7F          0001**M         ld a, value
+040239 5B D7       0002**M         rst.lil $10
+04023B C9          0526**      ret
+04023C             0527**  
+04023C             0528**  ; Load a data table into the VDU
+04023C             0529**  ; IX = table address
+04023C             0530**  ; HL = entry prefix function (0 for none)
+04023C             0531**  ; D = entry stride
+04023C             0532**  ; E = entry count
+04023C             0533**  ; BC = free for use in prefix function
+04023C             0534**  LoadTable:
+04023C CD 55 02 04 0535**      call TablePrefix
+040240 D5          0536**      push de
+040241             0537**  LoadTableLoop:
+040241 DD 7E 00    0538**      ld a, (ix+0)
+040244             0539**      SendByte a
+040244 7F          0001**M         ld a, value
+040245 5B D7       0002**M         rst.lil $10
+040247 DD 23       0540**      inc ix
+040249 15          0541**      dec d
+04024A C2 41 02 04 0542**      jp nz, LoadTableLoop
+04024E D1          0543**      pop de
+04024F 1D          0544**      dec e
+040250 C2 3C 02 04 0545**      jp nz, LoadTable
+040254 C9          0546**      ret
+040255             0547**  
+040255             0548**  ; call table prefix function in HL, unless it is 0
+040255             0549**  ; HL = function pointer
+040255             0550**  TablePrefix:
+040255 7C          0551**      ld a, h
+040256 B5          0552**      or l
+040257 C8          0553**      ret z
+040258 E9          0554**      jp (hl)
+040259             0045*   
+040259             0046*   Entry:
+040259 F5          0047*       push af                                 ; store all the registers
+04025A C5          0048*       push bc
+04025B D5          0049*       push de
+04025C DD E5       0050*       push ix
+04025E FD E5       0051*       push iy
+040260             0052*   
+040260 C3 46 08 04 0053*       jp Main
+040264             0054*   
+040264             0055*   
+040264             0056*   Exit:
+040264 CD F8 01 04 0057*       call ResetBitmapChars
+040268 FD E1       0058*       pop iy                                  ; pop all registers back from the stack
+04026A DD E1       0059*       pop ix
+04026C D1          0060*       pop de
+04026D C1          0061*       pop bc
+04026E F1          0062*       pop af
+04026F 21 00 00 00 0063*       ld hl,0                                 ; load the MOS API return code (0) for no errors.
+040273 C9          0064*       ret                                     ; return to MOS
+040274             0065*   
+040274             0066*   
+040274             0067*   ; platform specific graphics initialization
+040274             0068*   InitGraphics:
+040274 0E 08       0069*       ld c, 8
+040276 CD 6C 00 04 0070*       call VdpMode
+04027A CD CF 07 04 0071*       call LoadAllGradients
+04027E CD A8 00 04 0072*       call TextCursorHide
+040282 11 00 00 00 0073*       ld de, 0
+040286 CD 4C 07 04 0074*       call SetGradient
+04028A             0075*       ;call EnableScrollProtection
+04028A C9          0076*       ret
+04028B             0077*   
+04028B             0078*   
+04028B             0079*   ; get a key press in A
+04028B             0080*   GetKey:
+04028B             0081*       MosCall mos_sysvars         ; get ix pointer to sysvars
+04028B 3E 08       0001*M          ld a, function
+04028D 49 CF       0002*M          rst.lis $08
+04028F DD 7E 18    0082*       ld a, (ix+sysvar_vkeydown)  ; get key state
+040292 B7          0083*       or a                        ; key is down; wait for it to be released
+040293 C2 8B 02 04 0084*       jp nz, GetKey
+040297 DD 7E 05    0085*       ld a, (ix+sysvar_keyascii)  ; load the ascii code of the key pressed
+04029A DD 36 05 00 0086*       ld (ix+sysvar_keyascii), 0  ; clear it for next time
+04029E B7          0087*       or a                        ; set z flag if key was pressed
+04029F C9          0088*       ret
+0402A0             0089*   
+0402A0             0090*   
+0402A0             0091*   ; Wait for a keypress and return in A
+0402A0             0092*   WaitKey:
+0402A0 CD 8B 02 04 0093*       call GetKey
+0402A4             0094*   WaitKeyLoop:
+0402A4 CD 8B 02 04 0095*       call GetKey
+0402A8 CA A4 02 04 0096*       jp z, WaitKeyLoop
+0402AC C9          0097*       ret
+0402AD             0098*   
+0402AD             0099*   
+0402AD             0100*   ; Send all the tiles in the screen buffer
+0402AD             0101*   SendScreenBuffer:
+0402AD 21 B0 16 04 0102*       ld hl, ScreenBuffer         ; initialize pointers and counter
+0402B1 11 60 1B 04 0103*       ld de, VduBuffer
+0402B5 01 B0 04 00 0104*       ld bc, ScreenSize
+0402B9 3E 17       0105*       ld a, VduCommand            ; add prefix commands to vdu buffer
+0402BB 12          0106*       ld (de), a
+0402BC 13          0107*       inc de
+0402BD 3E 00       0108*       ld a, VduSystemCommand
+0402BF 12          0109*       ld (de), a
+0402C0 13          0110*       inc de
+0402C1 3E C3       0111*       ld a, VduVsyncBufferSwap
+0402C3 12          0112*       ld (de), a
+0402C4 13          0113*       inc de
+0402C5 3E 1E       0114*       ld a, VduCursorHome
+0402C7 12          0115*       ld (de), a
+0402C8 13          0116*       inc de
+0402C9 CD 0C 02 04 0117*       call EscapeBuffer           ; copy the screen buffer, escaped as needed
+0402CD EB          0118*       ex de, hl                   ; calculate the length of the escaped buffer
+0402CE 21 60 1B 04 0119*       ld hl, VduBuffer
+0402D2 A7          0120*       and a
+0402D3 ED 52       0121*       sbc hl, de
+0402D5 E5          0122*       push hl
+0402D6 C1          0123*       pop bc
+0402D7 21 60 1B 04 0124*       ld hl, VduBuffer            ; Send the buffer to the VDU
+0402DB ED 5B FD 06 0125*       ld de, (BitmapCounter)
        04          
-0402CB CD 4D 01 04 0112*       call ClearBuffer
-0402CF             0113*       SendByte VduCommand
-0402CF 3E 17       0001*M          ld a, value
-0402D1 5B D7       0002*M          rst.lil $10
-0402D3             0114*       SendByte VduSystem
-0402D3 3E 00       0001*M          ld a, value
-0402D5 5B D7       0002*M          rst.lil $10
-0402D7             0115*       SendByte VduBuffer
-0402D7 3E A0       0001*M          ld a, value
-0402D9 5B D7       0002*M          rst.lil $10
-0402DB             0116*       SendByte e                  ; buffer id
-0402DB 7B          0001*M          ld a, value
-0402DC 5B D7       0002*M          rst.lil $10
-0402DE             0117*       SendByte d
-0402DE 7A          0001*M          ld a, value
-0402DF 5B D7       0002*M          rst.lil $10
-0402E1             0118*       SendByte VduBufferWriteBlock
-0402E1 3E 00       0001*M          ld a, value
-0402E3 5B D7       0002*M          rst.lil $10
-0402E5             0119*       SendByte c                  ; length
-0402E5 79          0001*M          ld a, value
-0402E6 5B D7       0002*M          rst.lil $10
-0402E8             0120*       SendByte b
-0402E8 78          0001*M          ld a, value
-0402E9 5B D7       0002*M          rst.lil $10
-0402EB             0121*       SendByte VduCursorHome
-0402EB 3E 1E       0001*M          ld a, value
-0402ED 5B D7       0002*M          rst.lil $10
-0402EF             0122*   SendScreenBufferLoop:
-0402EF 7E          0123*       ld a, (hl)
-0402F0 CD 27 02 04 0124*       call SendChar
-0402F4 23          0125*       inc hl
-0402F5 0B          0126*       dec bc
-0402F6 78          0127*       ld a, b
-0402F7 B1          0128*       or c
-0402F8 C2 EF 02 04 0129*       jp nz, SendScreenBufferLoop
-0402FC C9          0130*       ret
-0402FD             0131*   
-0402FD             0132*   DrawScreen:
-0402FD CD AE 02 04 0133*       call SendScreenBuffer
-040301 CD 00 01 04 0134*       call WaitVSync
-040305 CD 66 01 04 0135*       call CallBuffer
-040309 C9          0136*       ret
-04030A             0137*   
-04030A             0138*   EnableInterrupt:
-04030A C9          0139*       ret                     ; no interrupt needed on Agon
-04030B             0140*   
-04030B             0141*   
-04030B             0142*   ShowHelp:
-04030B C9          0143*       ret                     ; figure out how to do this later
-04030C             0044            ;include "rcmsx.inc"
-04030C             0045    
-04030C             0046    ; =============================================================================
-04030C             0047    ; general includes
-04030C             0048    
-04030C             0049            include "utility.inc"
-04030C             0001*   ; Miscellaneuous utility functions
-04030C             0002*   ; Copyright 2018-2024 J.B. Langston
-04030C             0003*   ;
-04030C             0004*   ; Permission is hereby granted, free of charge, to any person obtaining a
-04030C             0005*   ; copy of this software and associated documentation files (the "Software"),
-04030C             0006*   ; to deal in the Software without restriction, including without limitation
-04030C             0007*   ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
-04030C             0008*   ; and/or sell copies of the Software, and to permit persons to whom the
-04030C             0009*   ; Software is furnished to do so, subject to the following conditions:
-04030C             0010*   ;
-04030C             0011*   ; The above copyright notice and this permission notice shall be included in
-04030C             0012*   ; all copies or substantial portions of the Software.
-04030C             0013*   ;
-04030C             0014*   ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-04030C             0015*   ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-04030C             0016*   ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-04030C             0017*   ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-04030C             0018*   ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-04030C             0019*   ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-04030C             0020*   ; DEALINGS IN THE SOFTWARE.
-04030C             0021*   
-04030C             0022*   
-04030C             0023*           ; jumps to target label if the specified value is in A
-04030C             0024*           ; can be used to build a concise dispatch routine...
-04030C             0025*           ;
-04030C             0026*           ; Dispatch:
-04030C             0027*           ;       JumpIf 0, Target0
-04030C             0028*           ;       JumpIf 1, Target1
-04030C             0029*           ;       ; ...
-04030C             0030*           ;       ret
-04030C             0031*           macro JumpIf value, target
-04030C             0032*           cp      value
-04030C             0033*           jp      z, target
-04030C             0034*           endmacro
-04030C             0035*   
-04030C             0036*   
-04030C             0037*   ; CharOut must be defined elsewhere for HexByte and HexBytes to work
-04030C             0038*   
-04030C             0039*   ; Output a byte in hex
-04030C             0040*   ;       A = byte to output
-04030C             0041*   HexByte:
-04030C F5          0042*           push    af
-04030D 1F          0043*           rra
-04030E 1F          0044*           rra
-04030F 1F          0045*           rra
-040310 1F          0046*           rra
-040311 CD 2F 03 04 0047*           call    HexNybble
-040315 CD 45 00 04 0048*           call    CharOut
-040319 F1          0049*           pop     af
-04031A CD 2F 03 04 0050*           call    HexNybble
-04031E C3 45 00 04 0051*           jp      CharOut
-040322             0052*   
-040322             0053*   ; Output byte buffer in hex
-040322             0054*   ;       HL = address of byte buffer
-040322             0055*   ;       B = length of byte buffer
-040322             0056*   HexBytes:
-040322 7E          0057*           ld      a, (hl)
-040323 CD 0C 03 04 0058*           call    HexByte
-040327 CD 5A 00 04 0059*           call    Space
-04032B 23          0060*           inc     hl
-04032C 10 F4       0061*           djnz    HexBytes
-04032E C9          0062*           ret
-04032F             0063*   
-04032F             0064*   ; convert lower nybble of A to hex (also in A)
-04032F             0065*   ; from http://map.grauw.nl/sources/external/z80bits.html#5.1
-04032F             0066*   HexNybble:
-04032F F6 F0       0067*           or      0f0h
-040331 27          0068*           daa
-040332 C6 A0       0069*           add     a, 0a0h
-040334 CE 40       0070*           adc     a, 40h
-040336 C9          0071*           ret
-040337             0072*   
-040337             0073*   ; RandomSeed sets the seed from four bytes in screen buffer data offset by refresh register.
-040337             0074*   RandomSeed:
-040337 21 B0 16 04 0075*           ld      hl, ScreenBuffer
-04033B ED 5F       0076*           ld      a, r
-04033D 16 00       0077*           ld      d, 0
-04033F 5F          0078*           ld      e, a
-040340 19          0079*           add     hl, de
-040341 06 04       0080*           ld      b, 4
-040343 11 6D 03 04 0081*           ld      de, Seed1
-040347             0082*   RandomSeedLoop:
-040347 7E          0083*           ld      a, (hl)
-040348 AD          0084*           xor     l
-040349 12          0085*           ld      (de), a
-04034A 23          0086*           inc     hl
-04034B 13          0087*           inc     de
-04034C 10 F9       0088*           djnz    RandomSeedLoop
-04034E C9          0089*           ret
-04034F             0090*   
-04034F             0091*   ; RandomNumber generates a random number using combined LFSR/LCG PRNG with 16-bit seeds
-04034F             0092*   ; https://wikiti.brandonw.net/index.php?title=Z80_Routines:Math:Random
-04034F             0093*   RandomNumber:
-04034F 2A 6D 03 04 0094*           ld      hl, (Seed1)
-040353 44          0095*           ld      b, h
-040354 4D          0096*           ld      c, l
-040355 29          0097*           add     hl, hl
-040356 29          0098*           add     hl, hl
-040357 2C          0099*           inc     l
-040358 09          0100*           add     hl, bc
-040359 22 6D 03 04 0101*           ld      (Seed1), hl
-04035D 2A 6F 03 04 0102*           ld      hl, (Seed2)
-040361 29          0103*           add     hl, hl
-040362 9F          0104*           sbc     a, a
-040363 E6 2D       0105*           and     %00101101
-040365 AD          0106*           xor     l
-040366 6F          0107*           ld      l, a
-040367 22 6F 03 04 0108*           ld      (Seed2), hl
-04036B 09          0109*           add     hl, bc
-04036C C9          0110*           ret
-04036D             0111*   
-04036D             0112*   Seed1:
-04036D 00 00       0113*           defw    0
-04036F             0114*   Seed2:
-04036F 00 00       0115*           defw    0
-040371             0116*   
-040371             0117*   ; RandomSeries generates series of random numbers
-040371             0118*   ; b = number of random numbers to generate
-040371             0119*   ; c = mask for random numbers
-040371             0120*   ; d = offset for random numbers
-040371             0121*   RandomSeries:
-040371 C5          0122*           push    bc
-040372 E5          0123*           push    hl
-040373 CD 4F 03 04 0124*           call    RandomNumber
-040377 7D          0125*           ld      a, l
-040378 B7          0126*           or      a
-040379 E1          0127*           pop     hl
-04037A C1          0128*           pop     bc
-04037B FC 8B 03 04 0129*           call    m, RandomNeg
-04037F F4 88 03 04 0130*           call    p, RandomPos
-040383 77          0131*           ld      (hl), a
-040384 23          0132*           inc     hl
-040385 10 EA       0133*           djnz    RandomSeries
-040387 C9          0134*           ret
-040388             0135*   RandomPos:
-040388 A1          0136*           and     c
-040389 82          0137*           add     a, d
-04038A C9          0138*           ret
-04038B             0139*   RandomNeg:
-04038B A1          0140*           and     c
-04038C 82          0141*           add     a, d
-04038D 2F          0142*           cpl
-04038E 3C          0143*           inc     a
-04038F C9          0144*           ret
-040390             0050            include "data.inc"
-040390             0001*   ; Data for plasma demo (sources credited individually below)
-040390             0002*   
-040390             0003*   ; Gradient patterns from Produkthandler Kom Her by Camelot: https://csdb.dk/release/?id=760
-040390             0004*   Gradient:
-040390 00 00 00 00 0005*       .db $00,$00,$00,$00,$00,$00,$00,$00
+0402E0 CD 4D 01 04 0126*       call ClearBuffer
+0402E4 CD 7F 01 04 0127*       call SendBufferBlock
+0402E8 C9          0128*       ret
+0402E9             0129*   
+0402E9             0130*   DrawScreen:
+0402E9 CD AD 02 04 0131*       call SendScreenBuffer
+0402ED             0132*       ;call CallBuffer
+0402ED C9          0133*       ret
+0402EE             0134*   
+0402EE             0135*   EnableInterrupt:
+0402EE C9          0136*       ret                     ; no interrupt needed on Agon
+0402EF             0137*   
+0402EF             0138*   
+0402EF             0139*   ShowHelp:
+0402EF C9          0140*       ret                     ; figure out how to do this later
+0402F0             0044            ;include "rcmsx.inc"
+0402F0             0045    
+0402F0             0046    ; =============================================================================
+0402F0             0047    ; general includes
+0402F0             0048    
+0402F0             0049            include "utility.inc"
+0402F0             0001*   ; Miscellaneuous utility functions
+0402F0             0002*   ; Copyright 2018-2024 J.B. Langston
+0402F0             0003*   ;
+0402F0             0004*   ; Permission is hereby granted, free of charge, to any person obtaining a
+0402F0             0005*   ; copy of this software and associated documentation files (the "Software"),
+0402F0             0006*   ; to deal in the Software without restriction, including without limitation
+0402F0             0007*   ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+0402F0             0008*   ; and/or sell copies of the Software, and to permit persons to whom the
+0402F0             0009*   ; Software is furnished to do so, subject to the following conditions:
+0402F0             0010*   ;
+0402F0             0011*   ; The above copyright notice and this permission notice shall be included in
+0402F0             0012*   ; all copies or substantial portions of the Software.
+0402F0             0013*   ;
+0402F0             0014*   ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+0402F0             0015*   ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+0402F0             0016*   ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+0402F0             0017*   ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+0402F0             0018*   ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+0402F0             0019*   ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+0402F0             0020*   ; DEALINGS IN THE SOFTWARE.
+0402F0             0021*   
+0402F0             0022*   
+0402F0             0023*           ; jumps to target label if the specified value is in A
+0402F0             0024*           ; can be used to build a concise dispatch routine...
+0402F0             0025*           ;
+0402F0             0026*           ; Dispatch:
+0402F0             0027*           ;       JumpIf 0, Target0
+0402F0             0028*           ;       JumpIf 1, Target1
+0402F0             0029*           ;       ; ...
+0402F0             0030*           ;       ret
+0402F0             0031*           macro JumpIf value, target
+0402F0             0032*           cp      value
+0402F0             0033*           jp      z, target
+0402F0             0034*           endmacro
+0402F0             0035*   
+0402F0             0036*   
+0402F0             0037*   ; CharOut must be defined elsewhere for HexByte and HexBytes to work
+0402F0             0038*   
+0402F0             0039*   ; Output a byte in hex
+0402F0             0040*   ;       A = byte to output
+0402F0             0041*   HexByte:
+0402F0 F5          0042*           push    af
+0402F1 1F          0043*           rra
+0402F2 1F          0044*           rra
+0402F3 1F          0045*           rra
+0402F4 1F          0046*           rra
+0402F5 CD 13 03 04 0047*           call    HexNybble
+0402F9 CD 45 00 04 0048*           call    CharOut
+0402FD F1          0049*           pop     af
+0402FE CD 13 03 04 0050*           call    HexNybble
+040302 C3 45 00 04 0051*           jp      CharOut
+040306             0052*   
+040306             0053*   ; Output byte buffer in hex
+040306             0054*   ;       HL = address of byte buffer
+040306             0055*   ;       B = length of byte buffer
+040306             0056*   HexBytes:
+040306 7E          0057*           ld      a, (hl)
+040307 CD F0 02 04 0058*           call    HexByte
+04030B CD 5A 00 04 0059*           call    Space
+04030F 23          0060*           inc     hl
+040310 10 F4       0061*           djnz    HexBytes
+040312 C9          0062*           ret
+040313             0063*   
+040313             0064*   ; convert lower nybble of A to hex (also in A)
+040313             0065*   ; from http://map.grauw.nl/sources/external/z80bits.html#5.1
+040313             0066*   HexNybble:
+040313 F6 F0       0067*           or      0f0h
+040315 27          0068*           daa
+040316 C6 A0       0069*           add     a, 0a0h
+040318 CE 40       0070*           adc     a, 40h
+04031A C9          0071*           ret
+04031B             0072*   
+04031B             0073*   ; RandomSeed sets the seed from four bytes in screen buffer data offset by refresh register.
+04031B             0074*   RandomSeed:
+04031B 21 B0 16 04 0075*           ld      hl, ScreenBuffer
+04031F ED 5F       0076*           ld      a, r
+040321 16 00       0077*           ld      d, 0
+040323 5F          0078*           ld      e, a
+040324 19          0079*           add     hl, de
+040325 06 04       0080*           ld      b, 4
+040327 11 51 03 04 0081*           ld      de, Seed1
+04032B             0082*   RandomSeedLoop:
+04032B 7E          0083*           ld      a, (hl)
+04032C AD          0084*           xor     l
+04032D 12          0085*           ld      (de), a
+04032E 23          0086*           inc     hl
+04032F 13          0087*           inc     de
+040330 10 F9       0088*           djnz    RandomSeedLoop
+040332 C9          0089*           ret
+040333             0090*   
+040333             0091*   ; RandomNumber generates a random number using combined LFSR/LCG PRNG with 16-bit seeds
+040333             0092*   ; https://wikiti.brandonw.net/index.php?title=Z80_Routines:Math:Random
+040333             0093*   RandomNumber:
+040333 2A 51 03 04 0094*           ld      hl, (Seed1)
+040337 44          0095*           ld      b, h
+040338 4D          0096*           ld      c, l
+040339 29          0097*           add     hl, hl
+04033A 29          0098*           add     hl, hl
+04033B 2C          0099*           inc     l
+04033C 09          0100*           add     hl, bc
+04033D 22 51 03 04 0101*           ld      (Seed1), hl
+040341 2A 53 03 04 0102*           ld      hl, (Seed2)
+040345 29          0103*           add     hl, hl
+040346 9F          0104*           sbc     a, a
+040347 E6 2D       0105*           and     %00101101
+040349 AD          0106*           xor     l
+04034A 6F          0107*           ld      l, a
+04034B 22 53 03 04 0108*           ld      (Seed2), hl
+04034F 09          0109*           add     hl, bc
+040350 C9          0110*           ret
+040351             0111*   
+040351             0112*   Seed1:
+040351 00 00       0113*           defw    0
+040353             0114*   Seed2:
+040353 00 00       0115*           defw    0
+040355             0116*   
+040355             0117*   ; RandomSeries generates series of random numbers
+040355             0118*   ; b = number of random numbers to generate
+040355             0119*   ; c = mask for random numbers
+040355             0120*   ; d = offset for random numbers
+040355             0121*   RandomSeries:
+040355 C5          0122*           push    bc
+040356 E5          0123*           push    hl
+040357 CD 33 03 04 0124*           call    RandomNumber
+04035B 7D          0125*           ld      a, l
+04035C B7          0126*           or      a
+04035D E1          0127*           pop     hl
+04035E C1          0128*           pop     bc
+04035F FC 6F 03 04 0129*           call    m, RandomNeg
+040363 F4 6C 03 04 0130*           call    p, RandomPos
+040367 77          0131*           ld      (hl), a
+040368 23          0132*           inc     hl
+040369 10 EA       0133*           djnz    RandomSeries
+04036B C9          0134*           ret
+04036C             0135*   RandomPos:
+04036C A1          0136*           and     c
+04036D 82          0137*           add     a, d
+04036E C9          0138*           ret
+04036F             0139*   RandomNeg:
+04036F A1          0140*           and     c
+040370 82          0141*           add     a, d
+040371 2F          0142*           cpl
+040372 3C          0143*           inc     a
+040373 C9          0144*           ret
+040374             0050            include "data.inc"
+040374             0001*   ; Data for plasma demo (sources credited individually below)
+040374             0002*   
+040374             0003*   ; Gradient patterns from Produkthandler Kom Her by Camelot: https://csdb.dk/release/?id=760
+040374             0004*   Gradient:
+040374 00 00 00 00 0005*       .db $00,$00,$00,$00,$00,$00,$00,$00
        00 00 00 00 
-040398             0006*   GradientStride: equ $ - Gradient
-040398             0007*       ;db $00,$00,$08,$00,$00,$00,$04,$00
-040398 00 00 10 00 0008*       .db $00,$00,$10,$00,$40,$00,$04,$00
+04037C             0006*   GradientStride: equ $ - Gradient
+04037C             0007*       ;db $00,$00,$08,$00,$00,$00,$04,$00
+04037C 00 00 10 00 0008*       .db $00,$00,$10,$00,$40,$00,$04,$00
        40 00 04 00 
-0403A0             0009*       ;db $00,$02,$10,$00,$40,$00,$04,$00
-0403A0 00 02 10 00 0010*       .db $00,$02,$10,$00,$40,$00,$04,$20
+040384             0009*       ;db $00,$02,$10,$00,$40,$00,$04,$00
+040384 00 02 10 00 0010*       .db $00,$02,$10,$00,$40,$00,$04,$20
        40 00 04 20 
-0403A8             0011*       ;db $00,$02,$10,$02,$40,$00,$04,$20
-0403A8 40 02 10 02 0012*       .db $40,$02,$10,$02,$40,$00,$04,$20
+04038C             0011*       ;db $00,$02,$10,$02,$40,$00,$04,$20
+04038C 40 02 10 02 0012*       .db $40,$02,$10,$02,$40,$00,$04,$20
        40 00 04 20 
-0403B0             0013*       ;db $40,$02,$10,$02,$40,$08,$04,$20
-0403B0 40 02 10 02 0014*       .db $40,$02,$10,$02,$40,$08,$05,$20
+040394             0013*       ;db $40,$02,$10,$02,$40,$08,$04,$20
+040394 40 02 10 02 0014*       .db $40,$02,$10,$02,$40,$08,$05,$20
        40 08 05 20 
-0403B8             0015*       ;db $40,$02,$10,$02,$40,$88,$05,$20
-0403B8 40 02 10 0A 0016*       .db $40,$02,$10,$0a,$40,$88,$05,$20
+04039C             0015*       ;db $40,$02,$10,$02,$40,$88,$05,$20
+04039C 40 02 10 0A 0016*       .db $40,$02,$10,$0a,$40,$88,$05,$20
        40 88 05 20 
-0403C0             0017*       ;db $44,$02,$10,$0a,$40,$88,$05,$20
-0403C0 44 02 10 0A 0018*       .db $44,$02,$10,$0a,$41,$88,$05,$20
+0403A4             0017*       ;db $44,$02,$10,$0a,$40,$88,$05,$20
+0403A4 44 02 10 0A 0018*       .db $44,$02,$10,$0a,$41,$88,$05,$20
        41 88 05 20 
-0403C8             0019*       ;db $44,$02,$50,$0a,$41,$88,$05,$20
-0403C8 44 02 50 0A 0020*       .db $44,$02,$50,$0a,$41,$a8,$05,$20
+0403AC             0019*       ;db $44,$02,$50,$0a,$41,$88,$05,$20
+0403AC 44 02 50 0A 0020*       .db $44,$02,$50,$0a,$41,$a8,$05,$20
        41 A8 05 20 
-0403D0             0021*       ;db $44,$0a,$50,$0a,$41,$a8,$05,$20
-0403D0 44 8A 50 0A 0022*       .db $44,$8a,$50,$0a,$41,$a8,$05,$20
+0403B4             0021*       ;db $44,$0a,$50,$0a,$41,$a8,$05,$20
+0403B4 44 8A 50 0A 0022*       .db $44,$8a,$50,$0a,$41,$a8,$05,$20
        41 A8 05 20 
-0403D8             0023*       ;db $44,$8a,$50,$0a,$41,$aa,$05,$20
-0403D8 44 8A 50 0A 0024*       .db $44,$8a,$50,$0a,$51,$aa,$05,$20
+0403BC             0023*       ;db $44,$8a,$50,$0a,$41,$aa,$05,$20
+0403BC 44 8A 50 0A 0024*       .db $44,$8a,$50,$0a,$51,$aa,$05,$20
        51 AA 05 20 
-0403E0             0025*       ;db $44,$8a,$50,$0a,$51,$aa,$45,$20
-0403E0 54 8A 50 0A 0026*       .db $54,$8a,$50,$0a,$51,$aa,$45,$20
+0403C4             0025*       ;db $44,$8a,$50,$0a,$51,$aa,$45,$20
+0403C4 54 8A 50 0A 0026*       .db $54,$8a,$50,$0a,$51,$aa,$45,$20
        51 AA 45 20 
-0403E8             0027*       ;db $54,$8a,$51,$0a,$51,$aa,$45,$20
-0403E8 54 8A 51 0A 0028*       .db $54,$8a,$51,$0a,$51,$aa,$45,$28
+0403CC             0027*       ;db $54,$8a,$51,$0a,$51,$aa,$45,$20
+0403CC 54 8A 51 0A 0028*       .db $54,$8a,$51,$0a,$51,$aa,$45,$28
        51 AA 45 28 
-0403F0             0029*       ;db $54,$8a,$51,$2a,$51,$aa,$45,$28
-0403F0 55 8A 51 2A 0030*       .db $55,$8a,$51,$2a,$51,$aa,$45,$28
+0403D4             0029*       ;db $54,$8a,$51,$2a,$51,$aa,$45,$28
+0403D4 55 8A 51 2A 0030*       .db $55,$8a,$51,$2a,$51,$aa,$45,$28
        51 AA 45 28 
-0403F8             0031*       ;db $55,$8a,$51,$2a,$55,$aa,$45,$28
-0403F8 55 8A 51 2A 0032*       .db $55,$8a,$51,$2a,$55,$aa,$45,$2a
+0403DC             0031*       ;db $55,$8a,$51,$2a,$55,$aa,$45,$28
+0403DC 55 8A 51 2A 0032*       .db $55,$8a,$51,$2a,$55,$aa,$45,$2a
        55 AA 45 2A 
-040400             0033*       ;db $55,$8a,$55,$2a,$55,$aa,$45,$2a
-040400 55 8A 55 2A 0034*       .db $55,$8a,$55,$2a,$55,$aa,$45,$aa
+0403E4             0033*       ;db $55,$8a,$55,$2a,$55,$aa,$45,$2a
+0403E4 55 8A 55 2A 0034*       .db $55,$8a,$55,$2a,$55,$aa,$45,$aa
        55 AA 45 AA 
-040408             0035*       ;db $55,$8a,$55,$aa,$55,$aa,$45,$aa
-040408 55 8A 55 AA 0036*       .db $55,$8a,$55,$aa,$55,$aa,$55,$aa
+0403EC             0035*       ;db $55,$8a,$55,$aa,$55,$aa,$45,$aa
+0403EC 55 8A 55 AA 0036*       .db $55,$8a,$55,$aa,$55,$aa,$55,$aa
        55 AA 55 AA 
-040410             0037*       ;db $55,$aa,$55,$aa,$55,$aa,$55,$aa
-040410 55 AA 55 AA 0038*       .db $55,$aa,$55,$aa,$55,$aa,$55,$aa
+0403F4             0037*       ;db $55,$aa,$55,$aa,$55,$aa,$55,$aa
+0403F4 55 AA 55 AA 0038*       .db $55,$aa,$55,$aa,$55,$aa,$55,$aa
        55 AA 55 AA 
-040418             0039*       ;db $55,$aa,$55,$aa,$55,$aa,$75,$aa
-040418 55 BA 55 AA 0040*       .db $55,$ba,$55,$aa,$55,$aa,$75,$aa
+0403FC             0039*       ;db $55,$aa,$55,$aa,$55,$aa,$75,$aa
+0403FC 55 BA 55 AA 0040*       .db $55,$ba,$55,$aa,$55,$aa,$75,$aa
        55 AA 75 AA 
-040420             0041*       ;db $55,$ba,$55,$aa,$d5,$aa,$75,$aa
-040420 D5 BA 55 AA 0042*       .db $d5,$ba,$55,$aa,$d5,$aa,$75,$aa
+040404             0041*       ;db $55,$ba,$55,$aa,$d5,$aa,$75,$aa
+040404 D5 BA 55 AA 0042*       .db $d5,$ba,$55,$aa,$d5,$aa,$75,$aa
        D5 AA 75 AA 
-040428             0043*       ;db $d5,$ba,$55,$aa,$d5,$ae,$75,$aa
-040428 D7 BA 55 AA 0044*       .db $d7,$ba,$55,$aa,$d5,$ae,$75,$aa
+04040C             0043*       ;db $d5,$ba,$55,$aa,$d5,$ae,$75,$aa
+04040C D7 BA 55 AA 0044*       .db $d7,$ba,$55,$aa,$d5,$ae,$75,$aa
        D5 AE 75 AA 
-040430             0045*       ;db $d7,$ba,$55,$ae,$d5,$ae,$75,$aa
-040430 D7 BA 55 AE 0046*       .db $d7,$ba,$55,$ae,$d5,$ae,$75,$ab
+040414             0045*       ;db $d7,$ba,$55,$ae,$d5,$ae,$75,$aa
+040414 D7 BA 55 AE 0046*       .db $d7,$ba,$55,$ae,$d5,$ae,$75,$ab
        D5 AE 75 AB 
-040438             0047*       ;db $d7,$ba,$55,$ae,$f5,$ae,$75,$ab
-040438 DF BA 55 AE 0048*       .db $df,$ba,$55,$ae,$f5,$ae,$75,$ab
+04041C             0047*       ;db $d7,$ba,$55,$ae,$f5,$ae,$75,$ab
+04041C DF BA 55 AE 0048*       .db $df,$ba,$55,$ae,$f5,$ae,$75,$ab
        F5 AE 75 AB 
-040440             0049*       ;db $df,$ba,$55,$ae,$f5,$af,$75,$ab
-040440 DF BA 55 AE 0050*       .db $df,$ba,$55,$ae,$f5,$af,$75,$bb
+040424             0049*       ;db $df,$ba,$55,$ae,$f5,$af,$75,$ab
+040424 DF BA 55 AE 0050*       .db $df,$ba,$55,$ae,$f5,$af,$75,$bb
        F5 AF 75 BB 
-040448             0051*       ;db $df,$fa,$55,$ae,$f5,$af,$75,$bb
-040448 DF FA 55 BE 0052*       .db $df,$fa,$55,$be,$f5,$af,$75,$bb
+04042C             0051*       ;db $df,$fa,$55,$ae,$f5,$af,$75,$bb
+04042C DF FA 55 BE 0052*       .db $df,$fa,$55,$be,$f5,$af,$75,$bb
        F5 AF 75 BB 
-040450             0053*       ;db $df,$fa,$57,$be,$f5,$af,$75,$bb
-040450 DF FA 57 BE 0054*       .db $df,$fa,$57,$be,$f5,$af,$f5,$bb
+040434             0053*       ;db $df,$fa,$57,$be,$f5,$af,$75,$bb
+040434 DF FA 57 BE 0054*       .db $df,$fa,$57,$be,$f5,$af,$f5,$bb
        F5 AF F5 BB 
-040458             0055*       ;db $df,$fa,$57,$be,$f5,$af,$fd,$bb
-040458 DF FA 77 BE 0056*       .db $df,$fa,$77,$be,$f5,$af,$fd,$bb
+04043C             0055*       ;db $df,$fa,$57,$be,$f5,$af,$fd,$bb
+04043C DF FA 77 BE 0056*       .db $df,$fa,$77,$be,$f5,$af,$fd,$bb
        F5 AF FD BB 
-040460             0057*       ;db $df,$fa,$77,$be,$f5,$ef,$fd,$bb
-040460 DF FA 77 BF 0058*       .db $df,$fa,$77,$bf,$f5,$ef,$fd,$bb
+040444             0057*       ;db $df,$fa,$77,$be,$f5,$ef,$fd,$bb
+040444 DF FA 77 BF 0058*       .db $df,$fa,$77,$bf,$f5,$ef,$fd,$bb
        F5 EF FD BB 
-040468             0059*       ;db $df,$fa,$77,$bf,$f5,$ef,$fd,$bf
-040468 DF FA 77 BF 0060*       .db $df,$fa,$77,$bf,$fd,$ef,$fd,$bf
+04044C             0059*       ;db $df,$fa,$77,$bf,$f5,$ef,$fd,$bf
+04044C DF FA 77 BF 0060*       .db $df,$fa,$77,$bf,$fd,$ef,$fd,$bf
        FD EF FD BF 
-040470             0061*       ;db $df,$fa,$f7,$bf,$fd,$ef,$fd,$bf
-040470 DF FB F7 BF 0062*       .db $df,$fb,$f7,$bf,$fd,$ef,$fd,$bf
+040454             0061*       ;db $df,$fa,$f7,$bf,$fd,$ef,$fd,$bf
+040454 DF FB F7 BF 0062*       .db $df,$fb,$f7,$bf,$fd,$ef,$fd,$bf
        FD EF FD BF 
-040478             0063*       ;db $df,$fb,$ff,$bf,$fd,$ef,$fd,$bf
-040478 DF FB FF BF 0064*       .db $df,$fb,$ff,$bf,$fd,$ef,$fd,$ff
+04045C             0063*       ;db $df,$fb,$ff,$bf,$fd,$ef,$fd,$bf
+04045C DF FB FF BF 0064*       .db $df,$fb,$ff,$bf,$fd,$ef,$fd,$ff
        FD EF FD FF 
-040480             0065*       ;db $df,$fb,$ff,$bf,$ff,$ef,$fd,$ff
-040480 FF FB FF BF 0066*       .db $ff,$fb,$ff,$bf,$ff,$ef,$fd,$ff
+040464             0065*       ;db $df,$fb,$ff,$bf,$ff,$ef,$fd,$ff
+040464 FF FB FF BF 0066*       .db $ff,$fb,$ff,$bf,$ff,$ef,$fd,$ff
        FF EF FD FF 
-040488             0067*       ;db $ff,$fb,$ff,$bf,$ff,$ef,$ff,$ff
-040488 FF FB FF FF 0068*       .db $ff,$fb,$ff,$ff,$ff,$ef,$ff,$ff
+04046C             0067*       ;db $ff,$fb,$ff,$bf,$ff,$ef,$ff,$ff
+04046C FF FB FF FF 0068*       .db $ff,$fb,$ff,$ff,$ff,$ef,$ff,$ff
        FF EF FF FF 
-040490             0069*       ;db $ff,$ff,$ff,$ff,$ff,$ef,$ff,$ff
-040490             0070*   GradientLength: equ $ - Gradient
-040490             0071*   GradientCount: equ GradientLength / GradientStride
-040490             0072*   GradientStart: equ 128
-040490             0073*   
-040490             0074*   ; C64 Palette RGB values from https://www.c64-wiki.com/wiki/Color
-040490             0075*   C64PaletteRGB:
-040490 00 00 00    0076*       .db $00,$00,$00    ; black
-040493             0077*   C64PaletteRGBStride:   equ $ - C64PaletteRGB
-040493 FF FF FF    0078*       .db $ff,$ff,$ff    ; white
-040496 88 00 00    0079*       .db $88,$00,$00    ; red
-040499 AA FF EE    0080*       .db $aa,$ff,$ee    ; cyan
-04049C CC 44 CC    0081*       .db $cc,$44,$cc    ; purple
-04049F 00 CC 55    0082*       .db $00,$cc,$55    ; green
-0404A2 00 00 AA    0083*       .db $00,$00,$aa    ; blue
-0404A5 EE EE 77    0084*       .db $ee,$ee,$77    ; yellow
-0404A8 DD 88 55    0085*       .db $dd,$88,$55    ; orange
-0404AB 66 44 00    0086*       .db $66,$44,$00    ; brown
-0404AE FF 77 77    0087*       .db $ff,$77,$77    ; light red
-0404B1 33 33 33    0088*       .db $33,$33,$33    ; dark grey
-0404B4 77 77 77    0089*       .db $77,$77,$77    ; grey
-0404B7 AA FF 66    0090*       .db $aa,$ff,$66    ; light green
-0404BA 00 88 FF    0091*       .db $00,$88,$ff    ; light blue
-0404BD BB BB BB    0092*       .db $bb,$bb,$bb    ; light grey
-0404C0             0093*   C64PaletteRGBLength: equ $ - C64PaletteRGB
-0404C0             0094*   C64PaletteRGBCount: equ C64PaletteRGBLength / C64PaletteRGBStride
-0404C0             0095*   
-0404C0             0096*   C64PaletteRGBA2222:
-0404C0 C0          0097*       .db $c0             ; black
-0404C1 FF          0098*       .db $ff             ; white
-0404C2 C2          0099*       .db $c2             ; red
-0404C3 FE          0100*       .db $fe             ; cyan
-0404C4 E2          0101*       .db $e2             ; purple
-0404C5 D8          0102*       .db $d8             ; green
-0404C6 E0          0103*       .db $e0             ; blue
-0404C7 DF          0104*       .db $df             ; yellow
-0404C8 DB          0105*       .db $db             ; orange
-0404C9 C6          0106*       .db $c6             ; brown
-0404CA D7          0107*       .db $d7             ; light red
-0404CB D5          0108*       .db $d5             ; dark grey
-0404CC EA          0109*       .db $ea             ; grey
-0404CD CE          0110*       .db $ce             ; light green
-0404CE F4          0111*       .db $f4             ; light blue
-0404CF EA          0112*       .db $ea             ; light grey
-0404D0             0113*   C64PaletteRGBA2222Length: equ $ - C64PaletteRGBA2222
-0404D0             0114*   
-0404D0             0115*   ; mapping of C64 colors to nearest approximation on TMS9918A
-0404D0             0116*   C64PaletteTMS:
-0404D0 01          0117*       .db $01     ; black
-0404D1 0F          0118*       .db $0f     ; white
-0404D2 06          0119*       .db $06     ; red
-0404D3 07          0120*       .db $07     ; cyan
-0404D4 0D          0121*       .db $0d     ; purple
-0404D5 02          0122*       .db $02     ; green -> medium green
-0404D6 04          0123*       .db $04     ; blue
-0404D7 0B          0124*       .db $0b     ; yellow
-0404D8 09          0125*       .db $09     ; orange -> light red
-0404D9 0A          0126*       .db $0a     ; brown -> dark yellow
-0404DA 08          0127*       .db $08     ; light red -> medium red
-0404DB 01          0128*       .db $01     ; dark grey -> black
-0404DC 0E          0129*       .db $0e     ; grey
-0404DD 03          0130*       .db $03     ; light green
-0404DE 05          0131*       .db $05     ; light blue
-0404DF 0E          0132*       .db $0e     ; light grey -> grey
-0404E0             0133*   
-0404E0             0134*   ; Predefined palettes from Plascii Petsma: https://csdb.dk/release/?id=159933
-0404E0             0135*   ColorPalettes:
-0404E0 00 0B 0C 0F 0136*       .db $0,$b,$c,$f,$1
+040474             0069*       ;db $ff,$ff,$ff,$ff,$ff,$ef,$ff,$ff
+040474             0070*   GradientLength: equ $ - Gradient
+040474             0071*   GradientCount: equ GradientLength / GradientStride
+040474             0072*   GradientStart: equ 128
+040474             0073*   
+040474             0074*   ; C64 Palette RGB values from https://www.c64-wiki.com/wiki/Color
+040474             0075*   C64PaletteRGB:
+040474 00 00 00    0076*       .db $00,$00,$00    ; black
+040477             0077*   C64PaletteRGBStride:   equ $ - C64PaletteRGB
+040477 FF FF FF    0078*       .db $ff,$ff,$ff    ; white
+04047A 88 00 00    0079*       .db $88,$00,$00    ; red
+04047D AA FF EE    0080*       .db $aa,$ff,$ee    ; cyan
+040480 CC 44 CC    0081*       .db $cc,$44,$cc    ; purple
+040483 00 CC 55    0082*       .db $00,$cc,$55    ; green
+040486 00 00 AA    0083*       .db $00,$00,$aa    ; blue
+040489 EE EE 77    0084*       .db $ee,$ee,$77    ; yellow
+04048C DD 88 55    0085*       .db $dd,$88,$55    ; orange
+04048F 66 44 00    0086*       .db $66,$44,$00    ; brown
+040492 FF 77 77    0087*       .db $ff,$77,$77    ; light red
+040495 33 33 33    0088*       .db $33,$33,$33    ; dark grey
+040498 77 77 77    0089*       .db $77,$77,$77    ; grey
+04049B AA FF 66    0090*       .db $aa,$ff,$66    ; light green
+04049E 00 88 FF    0091*       .db $00,$88,$ff    ; light blue
+0404A1 BB BB BB    0092*       .db $bb,$bb,$bb    ; light grey
+0404A4             0093*   C64PaletteRGBLength: equ $ - C64PaletteRGB
+0404A4             0094*   C64PaletteRGBCount: equ C64PaletteRGBLength / C64PaletteRGBStride
+0404A4             0095*   
+0404A4             0096*   C64PaletteRGBA2222:
+0404A4 C0          0097*       .db $c0             ; black
+0404A5 FF          0098*       .db $ff             ; white
+0404A6 C2          0099*       .db $c2             ; red
+0404A7 FE          0100*       .db $fe             ; cyan
+0404A8 E2          0101*       .db $e2             ; purple
+0404A9 D8          0102*       .db $d8             ; green
+0404AA E0          0103*       .db $e0             ; blue
+0404AB DF          0104*       .db $df             ; yellow
+0404AC DB          0105*       .db $db             ; orange
+0404AD C6          0106*       .db $c6             ; brown
+0404AE D7          0107*       .db $d7             ; light red
+0404AF D5          0108*       .db $d5             ; dark grey
+0404B0 EA          0109*       .db $ea             ; grey
+0404B1 CE          0110*       .db $ce             ; light green
+0404B2 F4          0111*       .db $f4             ; light blue
+0404B3 EA          0112*       .db $ea             ; light grey
+0404B4             0113*   C64PaletteRGBA2222Length: equ $ - C64PaletteRGBA2222
+0404B4             0114*   
+0404B4             0115*   ; mapping of C64 colors to nearest approximation on TMS9918A
+0404B4             0116*   C64PaletteTMS:
+0404B4 01          0117*       .db $01     ; black
+0404B5 0F          0118*       .db $0f     ; white
+0404B6 06          0119*       .db $06     ; red
+0404B7 07          0120*       .db $07     ; cyan
+0404B8 0D          0121*       .db $0d     ; purple
+0404B9 02          0122*       .db $02     ; green -> medium green
+0404BA 04          0123*       .db $04     ; blue
+0404BB 0B          0124*       .db $0b     ; yellow
+0404BC 09          0125*       .db $09     ; orange -> light red
+0404BD 0A          0126*       .db $0a     ; brown -> dark yellow
+0404BE 08          0127*       .db $08     ; light red -> medium red
+0404BF 01          0128*       .db $01     ; dark grey -> black
+0404C0 0E          0129*       .db $0e     ; grey
+0404C1 03          0130*       .db $03     ; light green
+0404C2 05          0131*       .db $05     ; light blue
+0404C3 0E          0132*       .db $0e     ; light grey -> grey
+0404C4             0133*   
+0404C4             0134*   ; Predefined palettes from Plascii Petsma: https://csdb.dk/release/?id=159933
+0404C4             0135*   ColorPalettes:
+0404C4 00 0B 0C 0F 0136*       .db $0,$b,$c,$f,$1
        01          
-0404E5             0137*   ColorPaletteStride: equ $ - ColorPalettes
-0404E5 00 00 00 05 0138*       .db $0,$0,$0,$5,$5
+0404C9             0137*   ColorPaletteStride: equ $ - ColorPalettes
+0404C9 00 00 00 05 0138*       .db $0,$0,$0,$5,$5
        05          
-0404EA 0D 03 0E 04 0139*       .db $d,$3,$e,$4,$2
+0404CE 0D 03 0E 04 0139*       .db $d,$3,$e,$4,$2
        02          
-0404EF 09 02 04 0B 0140*       .db $9,$2,$4,$b,$6
+0404D3 09 02 04 0B 0140*       .db $9,$2,$4,$b,$6
        06          
-0404F4 06 0B 08 02 0141*       .db $6,$b,$8,$2,$2
+0404D8 06 0B 08 02 0141*       .db $6,$b,$8,$2,$2
        02          
-0404F9 0A 0C 0E 05 0142*       .db $a,$c,$e,$5,$5
+0404DD 0A 0C 0E 05 0142*       .db $a,$c,$e,$5,$5
        05          
-0404FE 06 0B 08 0A 0143*       .db $6,$b,$8,$a,$7
+0404E2 06 0B 08 0A 0143*       .db $6,$b,$8,$a,$7
        07          
-040503 0D 03 0C 08 0144*       .db $d,$3,$c,$8,$2
+0404E7 0D 03 0C 08 0144*       .db $d,$3,$c,$8,$2
        02          
-040508 01 03 0E 04 0145*       .db $1,$3,$e,$4,$2
+0404EC 01 03 0E 04 0145*       .db $1,$3,$e,$4,$2
        02          
-04050D 0D 05 0B 04 0146*       .db $d,$5,$b,$4,$a
+0404F1 0D 05 0B 04 0146*       .db $d,$5,$b,$4,$a
        0A          
-040512 03 0E 0B 08 0147*       .db $3,$e,$b,$8,$a
+0404F6 03 0E 0B 08 0147*       .db $3,$e,$b,$8,$a
        0A          
-040517 0A 04 06 0E 0148*       .db $a,$4,$6,$e,$3
+0404FB 0A 04 06 0E 0148*       .db $a,$4,$6,$e,$3
        03          
-04051C 0A 08 09 0B 0149*       .db $a,$8,$9,$b,$e
+040500 0A 08 09 0B 0149*       .db $a,$8,$9,$b,$e
        0E          
-040521             0150*   ColorPaletteEnd:    equ $
-040521             0151*   ColorPaletteLength: equ $ - ColorPalettes
-040521             0152*   ColorPaletteCount:  equ ColorPaletteLength / ColorPaletteStride
-040521             0153*   
-040521             0154*   ; Pre-defined plasma parameters from Plascii Petsma: https://csdb.dk/release/?id=159933
-040521             0155*   PlasmaParamList:
-040521 FA 05 03 FA 0156*           defb    $fa,$05,$03,$fa,$07,$04,$fe,$fe
+040505             0150*   ColorPaletteEnd:    equ $
+040505             0151*   ColorPaletteLength: equ $ - ColorPalettes
+040505             0152*   ColorPaletteCount:  equ ColorPaletteLength / ColorPaletteStride
+040505             0153*   
+040505             0154*   ; Pre-defined plasma parameters from Plascii Petsma: https://csdb.dk/release/?id=159933
+040505             0155*   PlasmaParamList:
+040505 FA 05 03 FA 0156*           defb    $fa,$05,$03,$fa,$07,$04,$fe,$fe
        07 04 FE FE 
-040529 FE 01 FE 02 0157*           defb    $fe,$01,$fe,$02,$03,$ff,$02,$02
+04050D FE 01 FE 02 0157*           defb    $fe,$01,$fe,$02,$03,$ff,$02,$02
        03 FF 02 02 
-040531 5E E8 EB 32 0158*           defb    $5e,$e8,$eb,$32,$69,$4f,$0a,$41
+040515 5E E8 EB 32 0158*           defb    $5e,$e8,$eb,$32,$69,$4f,$0a,$41
        69 4F 0A 41 
-040539 FE FC       0159*           defb    $fe,$fc
-04053B 06 07       0160*           defb    $06,$07
-04053D FF          0161*           defb    $ff
-04053E 01          0162*           defb    $01
-04053F             0163*   
-04053F 04 05 FC 02 0164*           defb    $04,$05,$fc,$02,$fc,$03,$02,$01
+04051D FE FC       0159*           defb    $fe,$fc
+04051F 06 07       0160*           defb    $06,$07
+040521 FF          0161*           defb    $ff
+040522 01          0162*           defb    $01
+040523             0163*   
+040523 04 05 FC 02 0164*           defb    $04,$05,$fc,$02,$fc,$03,$02,$01
        FC 03 02 01 
-040547 00 01 03 FD 0165*           defb    $00,$01,$03,$fd,$02,$fd,$fe,$00
+04052B 00 01 03 FD 0165*           defb    $00,$01,$03,$fd,$02,$fd,$fe,$00
        02 FD FE 00 
-04054F 51 A1 55 C1 0166*           defb    $51,$a1,$55,$c1,$0d,$5a,$dd,$26
+040533 51 A1 55 C1 0166*           defb    $51,$a1,$55,$c1,$0d,$5a,$dd,$26
        0D 5A DD 26 
-040557 FE FD       0167*           defb    $fe,$fd
-040559 08 08       0168*           defb    $08,$08
-04055B F8          0169*           defb    $f8
-04055C 06          0170*           defb    $06
-04055D             0171*   
-04055D F9 06 FE FA 0172*           defb    $f9,$06,$fe,$fa,$fa,$00,$07,$fb
+04053B FE FD       0167*           defb    $fe,$fd
+04053D 08 08       0168*           defb    $08,$08
+04053F F8          0169*           defb    $f8
+040540 06          0170*           defb    $06
+040541             0171*   
+040541 F9 06 FE FA 0172*           defb    $f9,$06,$fe,$fa,$fa,$00,$07,$fb
        FA 00 07 FB 
-040565 02 01 02 03 0173*           defb    $02,$01,$02,$03,$03,$00,$fd,$00
+040549 02 01 02 03 0173*           defb    $02,$01,$02,$03,$03,$00,$fd,$00
        03 00 FD 00 
-04056D 34 85 A6 11 0174*           defb    $34,$85,$a6,$11,$89,$2b,$fa,$9c
+040551 34 85 A6 11 0174*           defb    $34,$85,$a6,$11,$89,$2b,$fa,$9c
        89 2B FA 9C 
-040575 FC FB       0175*           defb    $fc,$fb
-040577 09 08       0176*           defb    $09,$08
-040579 FA          0177*           defb    $fa
-04057A 09          0178*           defb    $09
-04057B             0179*   
-04057B 00 01 03 00 0180*           defb    $00,$01,$03,$00,$01,$ff,$04,$fc
+040559 FC FB       0175*           defb    $fc,$fb
+04055B 09 08       0176*           defb    $09,$08
+04055D FA          0177*           defb    $fa
+04055E 09          0178*           defb    $09
+04055F             0179*   
+04055F 00 01 03 00 0180*           defb    $00,$01,$03,$00,$01,$ff,$04,$fc
        01 FF 04 FC 
-040583 01 FF 03 FE 0181*           defb    $01,$ff,$03,$fe,$fe,$03,$02,$02
+040567 01 FF 03 FE 0181*           defb    $01,$ff,$03,$fe,$fe,$03,$02,$02
        FE 03 02 02 
-04058B F3 02 0B 89 0182*           defb    $f3,$02,$0b,$89,$8c,$d3,$23,$aa
+04056F F3 02 0B 89 0182*           defb    $f3,$02,$0b,$89,$8c,$d3,$23,$aa
        8C D3 23 AA 
-040593 FE 01       0183*           defb    $fe,$01
-040595 07 07       0184*           defb    $07,$07
-040597 08          0185*           defb    $08
-040598 0A          0186*           defb    $0a
-040599             0187*   
-040599 04 04 04 FC 0188*           defb    $04,$04,$04,$fc,$fd,$04,$ff,$fc
+040577 FE 01       0183*           defb    $fe,$01
+040579 07 07       0184*           defb    $07,$07
+04057B 08          0185*           defb    $08
+04057C 0A          0186*           defb    $0a
+04057D             0187*   
+04057D 04 04 04 FC 0188*           defb    $04,$04,$04,$fc,$fd,$04,$ff,$fc
        FD 04 FF FC 
-0405A1 01 02 02 01 0189*           defb    $01,$02,$02,$01,$ff,$00,$ff,$01
+040585 01 02 02 01 0189*           defb    $01,$02,$02,$01,$ff,$00,$ff,$01
        FF 00 FF 01 
-0405A9 3A 21 53 93 0190*           defb    $3a,$21,$53,$93,$39,$b7,$26,$99
+04058D 3A 21 53 93 0190*           defb    $3a,$21,$53,$93,$39,$b7,$26,$99
        39 B7 26 99 
-0405B1 FD FE       0191*           defb    $fd,$fe
-0405B3 05 06       0192*           defb    $05,$06
-0405B5 03          0193*           defb    $03
-0405B6 04          0194*           defb    $04
-0405B7             0195*   
-0405B7 FD FD FD 02 0196*           defb    $fd,$fd,$fd,$02,$04,$00,$fd,$02
+040595 FD FE       0191*           defb    $fd,$fe
+040597 05 06       0192*           defb    $05,$06
+040599 03          0193*           defb    $03
+04059A 04          0194*           defb    $04
+04059B             0195*   
+04059B FD FD FD 02 0196*           defb    $fd,$fd,$fd,$02,$04,$00,$fd,$02
        04 00 FD 02 
-0405BF 03 02 FD 02 0197*           defb    $03,$02,$fd,$02,$03,$fe,$ff,$ff
+0405A3 03 02 FD 02 0197*           defb    $03,$02,$fd,$02,$03,$fe,$ff,$ff
        03 FE FF FF 
-0405C7 BC 99 5D 2F 0198*           defb    $bc,$99,$5d,$2f,$e6,$16,$af,$0e
+0405AB BC 99 5D 2F 0198*           defb    $bc,$99,$5d,$2f,$e6,$16,$af,$0e
        E6 16 AF 0E 
-0405CF FD FF       0199*           defb    $fd,$ff
-0405D1 07 07       0200*           defb    $07,$07
-0405D3 F5          0201*           defb    $f5
-0405D4 07          0202*           defb    $07
-0405D5             0203*   
-0405D5 FC 00 00 FF 0204*           defb    $fc,$00,$00,$ff,$04,$04,$00,$01
+0405B3 FD FF       0199*           defb    $fd,$ff
+0405B5 07 07       0200*           defb    $07,$07
+0405B7 F5          0201*           defb    $f5
+0405B8 07          0202*           defb    $07
+0405B9             0203*   
+0405B9 FC 00 00 FF 0204*           defb    $fc,$00,$00,$ff,$04,$04,$00,$01
        04 04 00 01 
-0405DD FD 03 00 02 0205*           defb    $fd,$03,$00,$02,$00,$03,$02,$03
+0405C1 FD 03 00 02 0205*           defb    $fd,$03,$00,$02,$00,$03,$02,$03
        00 03 02 03 
-0405E5 30 C7 07 60 0206*           defb    $30,$c7,$07,$60,$36,$2b,$e8,$ec
+0405C9 30 C7 07 60 0206*           defb    $30,$c7,$07,$60,$36,$2b,$e8,$ec
        36 2B E8 EC 
-0405ED FF FE       0207*           defb    $ff,$fe
-0405EF 09 03       0208*           defb    $09,$03
-0405F1 F8          0209*           defb    $f8
-0405F2 05          0210*           defb    $05
-0405F3             0211*   
-0405F3 FD FC FE 00 0212*           defb    $fd,$fc,$fe,$00,$00,$04,$fe,$01
+0405D1 FF FE       0207*           defb    $ff,$fe
+0405D3 09 03       0208*           defb    $09,$03
+0405D5 F8          0209*           defb    $f8
+0405D6 05          0210*           defb    $05
+0405D7             0211*   
+0405D7 FD FC FE 00 0212*           defb    $fd,$fc,$fe,$00,$00,$04,$fe,$01
        00 04 FE 01 
-0405FB 03 03 FE 02 0213*           defb    $03,$03,$fe,$02,$00,$03,$fe,$00
+0405DF 03 03 FE 02 0213*           defb    $03,$03,$fe,$02,$00,$03,$fe,$00
        00 03 FE 00 
-040603 21 D7 34 1B 0214*           defb    $21,$d7,$34,$1b,$5d,$eb,$8e,$7d
+0405E7 21 D7 34 1B 0214*           defb    $21,$d7,$34,$1b,$5d,$eb,$8e,$7d
        5D EB 8E 7D 
-04060B FD FF       0215*           defb    $fd,$ff
-04060D 0A 03       0216*           defb    $0a,$03
-04060F FD          0217*           defb    $fd
-040610 03          0218*           defb    $03
-040611             0219*   
-040611 FE 00 FF 01 0220*           defb    $fe,$00,$ff,$01,$04,$02,$fe,$fd
+0405EF FD FF       0215*           defb    $fd,$ff
+0405F1 0A 03       0216*           defb    $0a,$03
+0405F3 FD          0217*           defb    $fd
+0405F4 03          0218*           defb    $03
+0405F5             0219*   
+0405F5 FE 00 FF 01 0220*           defb    $fe,$00,$ff,$01,$04,$02,$fe,$fd
        04 02 FE FD 
-040619 02 01 FE 01 0221*           defb    $02,$01,$fe,$01,$03,$ff,$03,$ff
+0405FD 02 01 FE 01 0221*           defb    $02,$01,$fe,$01,$03,$ff,$03,$ff
        03 FF 03 FF 
-040621 0B 0F EA 8C 0222*           defb    $0b,$0f,$ea,$8c,$e0,$f8,$05,$0e
+040605 0B 0F EA 8C 0222*           defb    $0b,$0f,$ea,$8c,$e0,$f8,$05,$0e
        E0 F8 05 0E 
-040629 FC FD       0223*           defb    $fc,$fd
-04062B 07 06       0224*           defb    $07,$06
-04062D F8          0225*           defb    $f8
-04062E 0C          0226*           defb    $0c
-04062F             0227*   
-04062F 33 04 34 FC 0228*           defb    $33,$04,$34,$fc,$dd,$24,$cf,$7c
+04060D FC FD       0223*           defb    $fc,$fd
+04060F 07 06       0224*           defb    $07,$06
+040611 F8          0225*           defb    $f8
+040612 0C          0226*           defb    $0c
+040613             0227*   
+040613 33 04 34 FC 0228*           defb    $33,$04,$34,$fc,$dd,$24,$cf,$7c
        DD 24 CF 7C 
-040637 C1 73 02 31 0229*           defb    $c1,$73,$02,$31,$fe,$a0,$ee,$01
+04061B C1 73 02 31 0229*           defb    $c1,$73,$02,$31,$fe,$a0,$ee,$01
        FE A0 EE 01 
-04063F 3A 21 53 93 0230*           defb    $3a,$21,$53,$93,$39,$b7,$26,$99
+040623 3A 21 53 93 0230*           defb    $3a,$21,$53,$93,$39,$b7,$26,$99
        39 B7 26 99 
-040647 00 00       0231*           defb    $00,$00
-040649 04 01       0232*           defb    $04,$01
-04064B FD          0233*           defb    $fd
-04064C 00          0234*           defb    $00
-04064D             0235*   
-04064D FF 00 01 FF 0236*           defb    $ff,$00,$01,$ff,$02,$fe,$00,$02
+04062B 00 00       0231*           defb    $00,$00
+04062D 04 01       0232*           defb    $04,$01
+04062F FD          0233*           defb    $fd
+040630 00          0234*           defb    $00
+040631             0235*   
+040631 FF 00 01 FF 0236*           defb    $ff,$00,$01,$ff,$02,$fe,$00,$02
        02 FE 00 02 
-040655 FF 02 01 02 0237*           defb    $ff,$02,$01,$02,$fe,$01,$00,$00
+040639 FF 02 01 02 0237*           defb    $ff,$02,$01,$02,$fe,$01,$00,$00
        FE 01 00 00 
-04065D 1D BB C5 A3 0238*           defb    $1d,$bb,$c5,$a3,$ab,$6c,$ed,$a6
+040641 1D BB C5 A3 0238*           defb    $1d,$bb,$c5,$a3,$ab,$6c,$ed,$a6
        AB 6C ED A6 
-040665 FD FE       0239*           defb    $fd,$fe
-040667 03 03       0240*           defb    $03,$03
-040669 F8          0241*           defb    $f8
-04066A 08          0242*           defb    $08
-04066B             0243*   
-04066B 02 03 FD FD 0244*           defb    $02,$03,$fd,$fd,$01,$fc,$fd,$00
+040649 FD FE       0239*           defb    $fd,$fe
+04064B 03 03       0240*           defb    $03,$03
+04064D F8          0241*           defb    $f8
+04064E 08          0242*           defb    $08
+04064F             0243*   
+04064F 02 03 FD FD 0244*           defb    $02,$03,$fd,$fd,$01,$fc,$fd,$00
        01 FC FD 00 
-040673 01 03 FD FE 0245*           defb    $01,$03,$fd,$fe,$fe,$03,$00,$00
+040657 01 03 FD FE 0245*           defb    $01,$03,$fd,$fe,$fe,$03,$00,$00
        FE 03 00 00 
-04067B 69 AC 3B C1 0246*           defb    $69,$ac,$3b,$c1,$fe,$21,$37,$84
+04065F 69 AC 3B C1 0246*           defb    $69,$ac,$3b,$c1,$fe,$21,$37,$84
        FE 21 37 84 
-040683 FC FD       0247*           defb    $fc,$fd
-040685 06 05       0248*           defb    $06,$05
-040687 FA          0249*           defb    $fa
-040688 0B          0250*           defb    $0b
-040689             0251*   LastPlasmaParam:
-040689             0252*   
-040689             0253*   ; Sine table contains pre-computed sine values converted to 8-bit integers.
-040689             0254*   ; Real sine values from -1 to 1 correspond to unsigned integers from 0 to 255.
-040689             0255*   ; The first quarter of the period is pre-computed using python script:
-040689             0256*   
-040689             0257*   ; #!/usr/bin/python3
-040689             0258*   ; import math
-040689             0259*   ; amp = 0xfe
-040689             0260*   ; for i in range(0, 0x40):
-040689             0261*   ;     sin = 2 + amp / 2 + amp * 0.499999 * math.sin(i / (0x100 / 2 / math.pi))
-040689             0262*   ;     if i & 7 == 0:
-040689             0263*   ;         print("defb    ", end="")
-040689             0264*   ;     print(hex(int(sin)).replace("0x", "$"), end="\n" if i & 7 == 7 else ",")
-040689             0265*   
-040689             0266*   SineSrc:
-040689 81 84 87 8A 0267*           defb    $81,$84,$87,$8a,$8d,$90,$93,$96
+040667 FC FD       0247*           defb    $fc,$fd
+040669 06 05       0248*           defb    $06,$05
+04066B FA          0249*           defb    $fa
+04066C 0B          0250*           defb    $0b
+04066D             0251*   LastPlasmaParam:
+04066D             0252*   
+04066D             0253*   ; Sine table contains pre-computed sine values converted to 8-bit integers.
+04066D             0254*   ; Real sine values from -1 to 1 correspond to unsigned integers from 0 to 255.
+04066D             0255*   ; The first quarter of the period is pre-computed using python script:
+04066D             0256*   
+04066D             0257*   ; #!/usr/bin/python3
+04066D             0258*   ; import math
+04066D             0259*   ; amp = 0xfe
+04066D             0260*   ; for i in range(0, 0x40):
+04066D             0261*   ;     sin = 2 + amp / 2 + amp * 0.499999 * math.sin(i / (0x100 / 2 / math.pi))
+04066D             0262*   ;     if i & 7 == 0:
+04066D             0263*   ;         print("defb    ", end="")
+04066D             0264*   ;     print(hex(int(sin)).replace("0x", "$"), end="\n" if i & 7 == 7 else ",")
+04066D             0265*   
+04066D             0266*   SineSrc:
+04066D 81 84 87 8A 0267*           defb    $81,$84,$87,$8a,$8d,$90,$93,$96
        8D 90 93 96 
-040691 99 9C 9F A2 0268*           defb    $99,$9c,$9f,$a2,$a5,$a8,$ab,$ae
+040675 99 9C 9F A2 0268*           defb    $99,$9c,$9f,$a2,$a5,$a8,$ab,$ae
        A5 A8 AB AE 
-040699 B1 B4 B7 BA 0269*           defb    $b1,$b4,$b7,$ba,$bc,$bf,$c2,$c4
+04067D B1 B4 B7 BA 0269*           defb    $b1,$b4,$b7,$ba,$bc,$bf,$c2,$c4
        BC BF C2 C4 
-0406A1 C7 CA CC CF 0270*           defb    $c7,$ca,$cc,$cf,$d1,$d3,$d6,$d8
+040685 C7 CA CC CF 0270*           defb    $c7,$ca,$cc,$cf,$d1,$d3,$d6,$d8
        D1 D3 D6 D8 
-0406A9 DA DC DF E1 0271*           defb    $da,$dc,$df,$e1,$e3,$e5,$e7,$e8
+04068D DA DC DF E1 0271*           defb    $da,$dc,$df,$e1,$e3,$e5,$e7,$e8
        E3 E5 E7 E8 
-0406B1 EA EC ED EF 0272*           defb    $ea,$ec,$ed,$ef,$f1,$f2,$f3,$f5
+040695 EA EC ED EF 0272*           defb    $ea,$ec,$ed,$ef,$f1,$f2,$f3,$f5
        F1 F2 F3 F5 
-0406B9 F6 F7 F8 F9 0273*           defb    $f6,$f7,$f8,$f9,$fa,$fb,$fc,$fc
+04069D F6 F7 F8 F9 0273*           defb    $f6,$f7,$f8,$f9,$fa,$fb,$fc,$fc
        FA FB FC FC 
-0406C1 FD FE FE FF 0274*           defb    $fd,$fe,$fe,$ff,$ff,$ff,$ff,$ff
+0406A5 FD FE FE FF 0274*           defb    $fd,$fe,$fe,$ff,$ff,$ff,$ff,$ff
        FF FF FF FF 
-0406C9             0051            include "gradient.inc"
-0406C9             0001*   ; Palette Gradient Tools
-0406C9             0002*   ; Copyright 2024 J.B. Langston
-0406C9             0003*   ;
-0406C9             0004*   ; Permission is hereby granted, free of charge, to any person obtaining a
-0406C9             0005*   ; copy of this software and associated documentation files (the "Software"),
-0406C9             0006*   ; to deal in the Software without restriction, including without limitation
-0406C9             0007*   ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
-0406C9             0008*   ; and/or sell copies of the Software, and to permit persons to whom the
-0406C9             0009*   ; Software is furnished to do so, subject to the following conditions:
-0406C9             0010*   ;
-0406C9             0011*   ; The above copyright notice and this permission notice shall be included in
-0406C9             0012*   ; all copies or substantial portions of the Software.
-0406C9             0013*   ;
-0406C9             0014*   ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-0406C9             0015*   ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-0406C9             0016*   ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-0406C9             0017*   ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-0406C9             0018*   ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-0406C9             0019*   ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-0406C9             0020*   ; DEALINGS IN THE SOFTWARE.
-0406C9             0021*   
-0406C9             0022*   ; =============================================================================
-0406C9             0023*   ; Constants
-0406C9             0024*   
-0406C9             0025*   GradientChars: equ 256
-0406C9             0026*   SegmentCount: equ GradientChars/GradientCount
-0406C9             0027*   
-0406C9             0028*   TileWidth: equ 8
-0406C9             0029*   TileHeight: equ GradientStride
-0406C9             0030*   TileSize: equ TileWidth*TileHeight
-0406C9             0031*   
-0406C9             0032*   
-0406C9             0033*   ; =============================================================================
-0406C9             0034*   ; Scratch area
-0406C9             0035*   
-0406C9             0036*   TempTileBuffer:
-0406C9             0037*       defs TileSize
-040709             0038*   TempTileBufferLength: equ $ - TempTileBuffer
-040709             0039*   
-040709             0040*   TempColorBuffer:
-040709             0041*       defs SegmentCount*2
-040719             0042*   TempColorBufferLength: equ $ - TempColorBuffer
-040719             0043*   
-040719             0044*   BitmapCounter:
-040719 00 00       0045*       defw 0
-04071B             0046*   
-04071B             0047*   
-04071B             0048*   ; =============================================================================
-04071B             0049*   ; Macros
-04071B             0050*   
-04071B             0051*       ; Store the foreground + background pair in a color ramp
-04071B             0052*       macro LoadColor dest, index
-04071B             0053*           push hl
-04071B             0054*           ld e, index
-04071B             0055*           add hl, de
-04071B             0056*           ld a, (hl)
-04071B             0057*           ld dest, a
-04071B             0058*           pop hl
-04071B             0059*       endmacro
-04071B             0060*   
-04071B             0061*   
-04071B             0062*   ; =============================================================================
-04071B             0063*   ; Routines
-04071B             0064*   
-04071B             0065*   ; Generate foreground and background pairs from Plascii-style color scheme
-04071B             0066*   ; HL = pointer to RGBA2222 color definitions
-04071B             0067*   ; IX = pointer to palette
-04071B             0068*   MakeColorRamp:
-04071B FD 21 09 07 0069*       ld iy, TempColorBuffer
+0406AD             0051            include "gradient.inc"
+0406AD             0001*   ; Palette Gradient Tools
+0406AD             0002*   ; Copyright 2024 J.B. Langston
+0406AD             0003*   ;
+0406AD             0004*   ; Permission is hereby granted, free of charge, to any person obtaining a
+0406AD             0005*   ; copy of this software and associated documentation files (the "Software"),
+0406AD             0006*   ; to deal in the Software without restriction, including without limitation
+0406AD             0007*   ; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+0406AD             0008*   ; and/or sell copies of the Software, and to permit persons to whom the
+0406AD             0009*   ; Software is furnished to do so, subject to the following conditions:
+0406AD             0010*   ;
+0406AD             0011*   ; The above copyright notice and this permission notice shall be included in
+0406AD             0012*   ; all copies or substantial portions of the Software.
+0406AD             0013*   ;
+0406AD             0014*   ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+0406AD             0015*   ; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+0406AD             0016*   ; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+0406AD             0017*   ; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+0406AD             0018*   ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+0406AD             0019*   ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+0406AD             0020*   ; DEALINGS IN THE SOFTWARE.
+0406AD             0021*   
+0406AD             0022*   ; =============================================================================
+0406AD             0023*   ; Constants
+0406AD             0024*   
+0406AD             0025*   GradientChars: equ 256
+0406AD             0026*   SegmentCount: equ GradientChars/GradientCount
+0406AD             0027*   
+0406AD             0028*   TileWidth: equ 8
+0406AD             0029*   TileHeight: equ GradientStride
+0406AD             0030*   TileSize: equ TileWidth*TileHeight
+0406AD             0031*   
+0406AD             0032*   
+0406AD             0033*   ; =============================================================================
+0406AD             0034*   ; Scratch area
+0406AD             0035*   
+0406AD             0036*   TempTileBuffer:
+0406AD             0037*       defs TileSize
+0406ED             0038*   TempTileBufferLength: equ $ - TempTileBuffer
+0406ED             0039*   
+0406ED             0040*   TempColorBuffer:
+0406ED             0041*       defs SegmentCount*2
+0406FD             0042*   TempColorBufferLength: equ $ - TempColorBuffer
+0406FD             0043*   
+0406FD             0044*   BitmapCounter:
+0406FD 00 00       0045*       defw 0
+0406FF             0046*   
+0406FF             0047*   
+0406FF             0048*   ; =============================================================================
+0406FF             0049*   ; Macros
+0406FF             0050*   
+0406FF             0051*       ; Store the foreground + background pair in a color ramp
+0406FF             0052*       macro LoadColor dest, index
+0406FF             0053*           push hl
+0406FF             0054*           ld e, index
+0406FF             0055*           add hl, de
+0406FF             0056*           ld a, (hl)
+0406FF             0057*           ld dest, a
+0406FF             0058*           pop hl
+0406FF             0059*       endmacro
+0406FF             0060*   
+0406FF             0061*   
+0406FF             0062*   ; =============================================================================
+0406FF             0063*   ; Routines
+0406FF             0064*   
+0406FF             0065*   ; Generate foreground and background pairs from Plascii-style color scheme
+0406FF             0066*   ; HL = pointer to RGBA2222 color definitions
+0406FF             0067*   ; IX = pointer to palette
+0406FF             0068*   MakeColorRamp:
+0406FF FD 21 ED 06 0069*       ld iy, TempColorBuffer
        04          
-040720 11 00 00 00 0070*       ld de, 0
-040724 06 04       0071*       ld b, SegmentCount/2
-040726             0072*   MakeColorRampAsc:               ; load colors into lookup in ascending order
-040726             0073*       LoadColor (iy+0), (ix+0)            ; foreground
+040704 11 00 00 00 0070*       ld de, 0
+040708 06 04       0071*       ld b, SegmentCount/2
+04070A             0072*   MakeColorRampAsc:               ; load colors into lookup in ascending order
+04070A             0073*       LoadColor (iy+0), (ix+0)            ; foreground
+04070A E5          0001*M          push hl
+04070B DD 5E 00    0002*M          ld e, index
+04070E 19          0003*M          add hl, de
+04070F 7E          0004*M          ld a, (hl)
+040710 FD 77 00    0005*M          ld dest, a
+040713 E1          0006*M          pop hl
+040714             0074*       LoadColor (iy+SegmentCount), (ix+1) ; background
+040714 E5          0001*M          push hl
+040715 DD 5E 01    0002*M          ld e, index
+040718 19          0003*M          add hl, de
+040719 7E          0004*M          ld a, (hl)
+04071A FD 77 08    0005*M          ld dest, a
+04071D E1          0006*M          pop hl
+04071E DD 23       0075*       inc ix
+040720 FD 23       0076*       inc iy
+040722 10 E6       0077*       djnz MakeColorRampAsc
+040724 06 04       0078*       ld b, SegmentCount/2
+040726             0079*   MakeColorRampDesc:              ; load colors into lookup in descending order
+040726             0080*       LoadColor (iy+0), (ix+0)            ; foreground
 040726 E5          0001*M          push hl
 040727 DD 5E 00    0002*M          ld e, index
 04072A 19          0003*M          add hl, de
 04072B 7E          0004*M          ld a, (hl)
 04072C FD 77 00    0005*M          ld dest, a
 04072F E1          0006*M          pop hl
-040730             0074*       LoadColor (iy+SegmentCount), (ix+1) ; background
+040730             0081*       LoadColor (iy+SegmentCount), (ix-1) ; background
 040730 E5          0001*M          push hl
-040731 DD 5E 01    0002*M          ld e, index
+040731 DD 5E FF    0002*M          ld e, index
 040734 19          0003*M          add hl, de
 040735 7E          0004*M          ld a, (hl)
 040736 FD 77 08    0005*M          ld dest, a
 040739 E1          0006*M          pop hl
-04073A DD 23       0075*       inc ix
-04073C FD 23       0076*       inc iy
-04073E 10 E6       0077*       djnz MakeColorRampAsc
-040740 06 04       0078*       ld b, SegmentCount/2
-040742             0079*   MakeColorRampDesc:              ; load colors into lookup in descending order
-040742             0080*       LoadColor (iy+0), (ix+0)            ; foreground
-040742 E5          0001*M          push hl
-040743 DD 5E 00    0002*M          ld e, index
-040746 19          0003*M          add hl, de
-040747 7E          0004*M          ld a, (hl)
-040748 FD 77 00    0005*M          ld dest, a
-04074B E1          0006*M          pop hl
-04074C             0081*       LoadColor (iy+SegmentCount), (ix-1) ; background
-04074C E5          0001*M          push hl
-04074D DD 5E FF    0002*M          ld e, index
-040750 19          0003*M          add hl, de
-040751 7E          0004*M          ld a, (hl)
-040752 FD 77 08    0005*M          ld dest, a
-040755 E1          0006*M          pop hl
-040756 DD 2B       0082*       dec ix
-040758 FD 23       0083*       inc iy
-04075A 10 E6       0084*       djnz MakeColorRampDesc
-04075C C9          0085*       ret
-04075D             0086*   
-04075D             0087*   
-04075D             0088*   ; Show all the gradient bitmaps, one after the other
-04075D             0089*   ShowGradientBitmaps:
-04075D AF          0090*       xor a
-04075E             0091*   ShowGradientBitmapsLoop:
-04075E CD 27 02 04 0092*       call SendChar
-040762 3C          0093*       inc a
-040763 C2 5E 07 04 0094*       jp nz, ShowGradientBitmapsLoop
-040767 C9          0095*       ret
-040768             0096*   
-040768             0097*   
-040768             0098*   ; Map all characters to selected gradient bitmaps
-040768             0099*   ; Params:
-040768             0100*   ;   DE = starting bitmap ID
-040768             0101*   SetGradient:
-040768 C5          0102*       push bc
-040769 D5          0103*       push de
-04076A 0E 00       0104*       ld c, 0
-04076C             0105*   SetGradientLoop:
-04076C CD E0 01 04 0106*       call MapCharToBitmap
-040770 13          0107*       inc de
-040771 0C          0108*       inc c
-040772 C2 6C 07 04 0109*       jp nz, SetGradientLoop
-040776 D1          0110*       pop de
-040777 C1          0111*       pop bc
-040778 C9          0112*       ret
-040779             0113*   
-040779             0114*   
-040779             0115*   LoadPalette:
-040779 11 00 00 00 0116*       ld de, 0
-04077D 3A 44 0E 04 0117*       ld a, (ColorPalette)
-040781 57          0118*       ld d, a
-040782 CD 68 07 04 0119*       call SetGradient
-040786 3C          0120*       inc a
-040787 C9          0121*       ret
-040788             0122*   
-040788             0123*   
-040788             0124*   ; Load a single segment of the gradient with specified foreground/background color
-040788             0125*   ; Params:
-040788             0126*   ;   B = background color
-040788             0127*   ;   C = foreground color
-040788             0128*   LoadGradientSegment:
-040788 21 90 03 04 0129*       ld hl, Gradient
-04078C 3E 20       0130*       ld a, GradientCount
-04078E             0131*   LoadGradientSegmentLoop:
-04078E 11 C9 06 04 0132*       ld de, TempTileBuffer
-040792 CD 3C 08 04 0133*       call MakeTile
-040796 E5          0134*       push hl
-040797 C5          0135*       push bc
-040798 21 C9 06 04 0136*       ld hl, TempTileBuffer
-04079C 01 40 00 00 0137*       ld bc, TempTileBufferLength
-0407A0 ED 5B 19 07 0138*       ld de, (BitmapCounter)
+04073A DD 2B       0082*       dec ix
+04073C FD 23       0083*       inc iy
+04073E 10 E6       0084*       djnz MakeColorRampDesc
+040740 C9          0085*       ret
+040741             0086*   
+040741             0087*   
+040741             0088*   ; Show all the gradient bitmaps, one after the other
+040741             0089*   ShowGradientBitmaps:
+040741 AF          0090*       xor a
+040742             0091*   ShowGradientBitmapsLoop:
+040742 CD 26 02 04 0092*       call EscapeChar
+040746 3C          0093*       inc a
+040747 C2 42 07 04 0094*       jp nz, ShowGradientBitmapsLoop
+04074B C9          0095*       ret
+04074C             0096*   
+04074C             0097*   
+04074C             0098*   ; Map all characters to selected gradient bitmaps
+04074C             0099*   ; Params:
+04074C             0100*   ;   DE = starting bitmap ID
+04074C             0101*   SetGradient:
+04074C C5          0102*       push bc
+04074D D5          0103*       push de
+04074E 0E 00       0104*       ld c, 0
+040750             0105*   SetGradientLoop:
+040750 CD E0 01 04 0106*       call MapCharToBitmap
+040754 13          0107*       inc de
+040755 0C          0108*       inc c
+040756 C2 50 07 04 0109*       jp nz, SetGradientLoop
+04075A D1          0110*       pop de
+04075B C1          0111*       pop bc
+04075C C9          0112*       ret
+04075D             0113*   
+04075D             0114*   
+04075D             0115*   LoadPalette:
+04075D 11 00 00 00 0116*       ld de, 0
+040761 3A 28 0E 04 0117*       ld a, (ColorPalette)
+040765 57          0118*       ld d, a
+040766 CD 4C 07 04 0119*       call SetGradient
+04076A 3C          0120*       inc a
+04076B C9          0121*       ret
+04076C             0122*   
+04076C             0123*   
+04076C             0124*   ; Load a single segment of the gradient with specified foreground/background color
+04076C             0125*   ; Params:
+04076C             0126*   ;   B = background color
+04076C             0127*   ;   C = foreground color
+04076C             0128*   LoadGradientSegment:
+04076C 21 74 03 04 0129*       ld hl, Gradient
+040770 3E 20       0130*       ld a, GradientCount
+040772             0131*   LoadGradientSegmentLoop:
+040772 11 AD 06 04 0132*       ld de, TempTileBuffer
+040776 CD 20 08 04 0133*       call MakeTile
+04077A E5          0134*       push hl
+04077B C5          0135*       push bc
+04077C 21 AD 06 04 0136*       ld hl, TempTileBuffer
+040780 01 40 00 00 0137*       ld bc, TempTileBufferLength
+040784 ED 5B FD 06 0138*       ld de, (BitmapCounter)
        04          
-0407A5 CD 1B 08 04 0139*       call SendTile
-0407A9 C1          0140*       pop bc
-0407AA E1          0141*       pop hl
-0407AB 13          0142*       inc de
-0407AC ED 53 19 07 0143*       ld (BitmapCounter), de
+040789 CD FF 07 04 0139*       call SendTile
+04078D C1          0140*       pop bc
+04078E E1          0141*       pop hl
+04078F 13          0142*       inc de
+040790 ED 53 FD 06 0143*       ld (BitmapCounter), de
        04          
-0407B1 3D          0144*       dec a
-0407B2 C2 8E 07 04 0145*       jp nz, LoadGradientSegmentLoop
-0407B6 C9          0146*       ret
-0407B7             0147*   
-0407B7             0148*   ; Load bitmaps for gradient of the currently loaded colors
-0407B7             0149*   ; Params:
-0407B7             0150*   ;   DE = starting bitmap number
-0407B7             0151*   ;   HL = pointer to ARGB2222 palette
-0407B7             0152*   ;   IX = pointer to color scheme
-0407B7             0153*   LoadGradientBitmaps:
-0407B7 CD 1B 07 04 0154*       call MakeColorRamp
-0407BB DD 21 09 07 0155*       ld ix, TempColorBuffer
+040795 3D          0144*       dec a
+040796 C2 72 07 04 0145*       jp nz, LoadGradientSegmentLoop
+04079A C9          0146*       ret
+04079B             0147*   
+04079B             0148*   ; Load bitmaps for gradient of the currently loaded colors
+04079B             0149*   ; Params:
+04079B             0150*   ;   DE = starting bitmap number
+04079B             0151*   ;   HL = pointer to ARGB2222 palette
+04079B             0152*   ;   IX = pointer to color scheme
+04079B             0153*   LoadGradientBitmaps:
+04079B CD FF 06 04 0154*       call MakeColorRamp
+04079F DD 21 ED 06 0155*       ld ix, TempColorBuffer
        04          
-0407C0 06 08       0156*       ld b, 8
-0407C2             0157*   LoadGradientBitmapsLoop:
-0407C2 C5          0158*       push bc
-0407C3 DD 4E 00    0159*       ld c, (ix+0)
-0407C6 DD 46 08    0160*       ld b, (ix+8)
-0407C9 CD 88 07 04 0161*       call LoadGradientSegment
-0407CD DD 23       0162*       inc ix
-0407CF C1          0163*       pop bc
-0407D0 10 F0       0164*       djnz LoadGradientBitmapsLoop
-0407D2 C9          0165*       ret
-0407D3             0166*   
-0407D3             0167*   
-0407D3             0168*   LoadAllGradientsMessage:
-0407D3 4C 6F 61 64 0169*       defb "Loading color gradients", EOS
+0407A4 06 08       0156*       ld b, 8
+0407A6             0157*   LoadGradientBitmapsLoop:
+0407A6 C5          0158*       push bc
+0407A7 DD 4E 00    0159*       ld c, (ix+0)
+0407AA DD 46 08    0160*       ld b, (ix+8)
+0407AD CD 6C 07 04 0161*       call LoadGradientSegment
+0407B1 DD 23       0162*       inc ix
+0407B3 C1          0163*       pop bc
+0407B4 10 F0       0164*       djnz LoadGradientBitmapsLoop
+0407B6 C9          0165*       ret
+0407B7             0166*   
+0407B7             0167*   
+0407B7             0168*   LoadAllGradientsMessage:
+0407B7 4C 6F 61 64 0169*       defb "Loading color gradients", EOS
        69 6E 67 20 
        63 6F 6C 6F 
        72 20 67 72 
        61 64 69 65 
        6E 74 73 00 
-0407EB             0170*   
-0407EB             0171*   LoadAllGradients:
-0407EB 21 D3 07 04 0172*       ld hl, LoadAllGradientsMessage
-0407EF CD 48 00 04 0173*       call StringOut
-0407F3 21 C0 04 04 0174*       ld hl, C64PaletteRGBA2222
-0407F7 DD 21 E0 04 0175*       ld ix, ColorPalettes
+0407CF             0170*   
+0407CF             0171*   LoadAllGradients:
+0407CF 21 B7 07 04 0172*       ld hl, LoadAllGradientsMessage
+0407D3 CD 48 00 04 0173*       call StringOut
+0407D7 21 A4 04 04 0174*       ld hl, C64PaletteRGBA2222
+0407DB DD 21 C4 04 0175*       ld ix, ColorPalettes
        04          
-0407FC 06 0D       0176*       ld b, ColorPaletteCount
-0407FE             0177*   LoadAllGradientsLoop:
-0407FE C5          0178*       push bc
-0407FF E5          0179*       push hl
-040800 DD E5       0180*       push ix
-040802 CD B7 07 04 0181*       call LoadGradientBitmaps
-040806 DD E1       0182*       pop ix
-040808 E1          0183*       pop hl
-040809 01 05 00 00 0184*       ld bc, ColorPaletteStride
-04080D DD 09       0185*       add ix, bc
-04080F             0186*       SendByte '.'
-04080F 3E 2E       0001*M          ld a, value
-040811 5B D7       0002*M          rst.lil $10
-040813 C1          0187*       pop bc
-040814 10 E8       0188*       djnz LoadAllGradientsLoop
-040816 CD 61 00 04 0189*       call NewLine
-04081A C9          0190*       ret
-04081B             0191*   
-04081B             0192*   ; Send the 8x8 RGBA2222 tile bitmap from the source buffer to the VDP
-04081B             0193*   ; Params:
-04081B             0194*   ;   HL = bitmap source buffer address
-04081B             0195*   ;   BC = bitmap length
-04081B             0196*   ;   DE = bitmap ID
-04081B             0197*   SendTile:
-04081B CD 4D 01 04 0198*       call ClearBuffer
-04081F CD 7F 01 04 0199*       call SendBufferBlock
-040823 CD AD 01 04 0200*       call SelectBitmapBuffer
-040827 C5          0201*       push bc
-040828 D5          0202*       push de
-040829 E5          0203*       push hl
-04082A 01 08 00 00 0204*       ld bc, 8
-04082E 11 08 00 00 0205*       ld de, 8
-040832 2E 01       0206*       ld l, VduBitmapFormatRGBA2222
-040834 CD C2 01 04 0207*       call CreateBitmapFromBuffer
-040838 E1          0208*       pop hl
-040839 D1          0209*       pop de
-04083A C1          0210*       pop bc
-04083B C9          0211*       ret
-04083C             0212*   
-04083C             0213*   ; Make an 8x8 RGBA2222 bitmap with specified colors from an 8x8 mono bitmap
-04083C             0214*   ; Params:
-04083C             0215*   ;   HL = pointer to monochrome bitmap
-04083C             0216*   ;   DE = tile output buffer
-04083C             0217*   ;   B = background color
-04083C             0218*   ;   C = foreground color
-04083C             0219*   MakeTile:
-04083C F5          0220*       push af
-04083D 3E 08       0221*       ld a, TileHeight
-04083F             0222*   MakeTileRowLoop:
-04083F F5          0223*       push af
-040840 7E          0224*       ld a, (hl)
-040841 CD 4E 08 04 0225*       call MakeTileRow
-040845 F1          0226*       pop af
-040846 23          0227*       inc hl
-040847 3D          0228*       dec a
-040848 C2 3F 08 04 0229*       jp nz, MakeTileRowLoop
-04084C F1          0230*       pop af
-04084D C9          0231*       ret
-04084E             0232*   
-04084E             0233*   
-04084E             0234*   ; make a single row of bytes in an 8x8 tile bitmap
-04084E             0235*   ; DE = output pointer
-04084E             0236*   ; A = bitmap
-04084E             0237*   ; B = background color in RGBA2222 format
-04084E             0238*   ; C = foreground color in RGBA2222 format
-04084E             0239*   MakeTileRow:
-04084E EB          0240*       ex de, hl
-04084F D5          0241*       push de
-040850 16 08       0242*       ld d, TileWidth
-040852             0243*   MakeTileColLoop:
-040852 87          0244*       add a, a
-040853 70          0245*       ld (hl), b
-040854 DA 59 08 04 0246*       jp c, MakeTileNextCol
-040858 71          0247*       ld (hl), c
-040859             0248*   MakeTileNextCol:
-040859 23          0249*       inc hl
-04085A 15          0250*       dec d
-04085B C2 52 08 04 0251*       jp nz, MakeTileColLoop
-04085F D1          0252*       pop de
-040860 EB          0253*       ex de, hl
-040861 C9          0254*       ret
-040862             0052    
-040862             0053    ; =============================================================================
-040862             0054    ; constants
-040862             0055    
-040862             0056    NumSinePnts:    equ 8
-040862             0057    NumSineSpeeds:  equ 2
-040862             0058    NumPlasmaFreqs: equ 2
-040862             0059    NumCycleSpeeds: equ 1
-040862             0060    
-040862             0061    ; =============================================================================
-040862             0062    ; central dispatch
-040862             0063    
-040862             0064    Main:                                   ; initialization tasks
-040862 CD 37 03 04 0065            call    RandomSeed
-040866 CD 58 0F 04 0066            call    MakeSineTable
-04086A CD 2A 0F 04 0067            call    MakeSpeedCode
-04086E CD 75 02 04 0068            call    InitGraphics
-040872 CD F7 0D 04 0069            call    FirstEffect
-040876 CD 0A 03 04 0070            call    EnableInterrupt
-04087A             0071    
-04087A             0072    MainLoop:                               ; repetitive tasks
-04087A 3A 7A 0C 04 0073            ld      a, (HoldEffect)
-04087E B7          0074            or      a
-04087F C2 8C 08 04 0075            jp      nz, NoEffectCycle
-040883 21 D2 0D 04 0076            ld      hl, DurationCnt
-040887 35          0077            dec     (hl)
-040888 CC D6 0D 04 0078            call    z, NextEffect
-04088C             0079    NoEffectCycle:
-04088C CD D9 0E 04 0080            call    CalcPlasmaFrame
-040890 CD FD 02 04 0081            call    DrawScreen
-040894 CD 8C 02 04 0082            call    GetKey
-040898             0083            JumpIf  'q', Exit               ; must be handled from main
-040898 FE 71       0001M           cp      value
-04089A CA 65 02 04 0002M           jp      z, target
-04089E CD A6 08 04 0084            call    Dispatch
-0408A2 C3 7A 08 04 0085            jp      MainLoop
-0408A6             0086    
-0408A6             0087    Dispatch:
-0408A6             0088            ; did you remember to add your new command to the help below?
-0408A6             0089            JumpIf  '?', ShowHelp
-0408A6 FE 3F       0001M           cp      value
-0408A8 CA 0B 03 04 0002M           jp      z, target
-0408AC             0090            JumpIf  'p', NextPalette
-0408AC FE 70       0001M           cp      value
-0408AE CA 45 0E 04 0002M           jp      z, target
-0408B2             0091            JumpIf  'h', ToggleHold
-0408B2 FE 68       0001M           cp      value
-0408B4 CA 96 0C 04 0002M           jp      z, target
-0408B8             0092            JumpIf  'n', NextEffect
-0408B8 FE 6E       0001M           cp      value
-0408BA CA D6 0D 04 0002M           jp      z, target
-0408BE             0093            JumpIf  'd', InitEffect
-0408BE FE 64       0001M           cp      value
-0408C0 CA FF 0D 04 0002M           jp      z, target
-0408C4             0094            JumpIf  'a', ToggleAnimation
-0408C4 FE 61       0001M           cp      value
-0408C6 CA 88 0C 04 0002M           jp      z, target
-0408CA             0095            JumpIf  'r', ToggleRandomParams
-0408CA FE 72       0001M           cp      value
-0408CC CA 7D 0C 04 0002M           jp      z, target
-0408D0             0096            JumpIf  'v', ViewParameters
-0408D0 FE 76       0001M           cp      value
-0408D2 CA 13 0D 04 0002M           jp      z, target
-0408D6             0097            JumpIf  'x', SelectSineAddsX
-0408D6 FE 78       0001M           cp      value
-0408D8 CA 1A 0C 04 0002M           jp      z, target
-0408DC             0098            JumpIf  'y', SelectSineAddsY
-0408DC FE 79       0001M           cp      value
-0408DE CA 24 0C 04 0002M           jp      z, target
-0408E2             0099            JumpIf  'i', SelectSineStartsY
-0408E2 FE 69       0001M           cp      value
-0408E4 CA 2E 0C 04 0002M           jp      z, target
-0408E8             0100            JumpIf  'c', SelectSineSpeeds
-0408E8 FE 63       0001M           cp      value
-0408EA CA 38 0C 04 0002M           jp      z, target
-0408EE             0101            JumpIf  's', SelectPlasmaFreqs
-0408EE FE 73       0001M           cp      value
-0408F0 CA 42 0C 04 0002M           jp      z, target
-0408F4             0102            JumpIf  'f', SelectCycleSpeed
-0408F4 FE 66       0001M           cp      value
-0408F6 CA 4C 0C 04 0002M           jp      z, target
-0408FA             0103            JumpIf  '0', ClearParameters
-0408FA FE 30       0001M           cp      value
-0408FC CA A1 0C 04 0002M           jp      z, target
-040900             0104            JumpIf  '>', IncSelected
-040900 FE 3E       0001M           cp      value
-040902 CA 6E 0C 04 0002M           jp      z, target
-040906             0105            JumpIf  '<', DecSelected
-040906 FE 3C       0001M           cp      value
-040908 CA 74 0C 04 0002M           jp      z, target
-04090C C9          0106            ret
-04090D             0107    
-04090D             0108    Help:
-04090D 0D 0A 43 6F 0109            defb    CR, LF, "Commands:", CR, LF
+0407E0 06 0D       0176*       ld b, ColorPaletteCount
+0407E2             0177*   LoadAllGradientsLoop:
+0407E2 C5          0178*       push bc
+0407E3 E5          0179*       push hl
+0407E4 DD E5       0180*       push ix
+0407E6 CD 9B 07 04 0181*       call LoadGradientBitmaps
+0407EA DD E1       0182*       pop ix
+0407EC E1          0183*       pop hl
+0407ED 01 05 00 00 0184*       ld bc, ColorPaletteStride
+0407F1 DD 09       0185*       add ix, bc
+0407F3             0186*       SendByte '.'
+0407F3 3E 2E       0001*M          ld a, value
+0407F5 5B D7       0002*M          rst.lil $10
+0407F7 C1          0187*       pop bc
+0407F8 10 E8       0188*       djnz LoadAllGradientsLoop
+0407FA CD 61 00 04 0189*       call NewLine
+0407FE C9          0190*       ret
+0407FF             0191*   
+0407FF             0192*   ; Send the 8x8 RGBA2222 tile bitmap from the source buffer to the VDP
+0407FF             0193*   ; Params:
+0407FF             0194*   ;   HL = bitmap source buffer address
+0407FF             0195*   ;   BC = bitmap length
+0407FF             0196*   ;   DE = bitmap ID
+0407FF             0197*   SendTile:
+0407FF CD 4D 01 04 0198*       call ClearBuffer
+040803 CD 7F 01 04 0199*       call SendBufferBlock
+040807 CD AD 01 04 0200*       call SelectBitmapBuffer
+04080B C5          0201*       push bc
+04080C D5          0202*       push de
+04080D E5          0203*       push hl
+04080E 01 08 00 00 0204*       ld bc, 8
+040812 11 08 00 00 0205*       ld de, 8
+040816 2E 01       0206*       ld l, VduBitmapFormatRGBA2222
+040818 CD C2 01 04 0207*       call CreateBitmapFromBuffer
+04081C E1          0208*       pop hl
+04081D D1          0209*       pop de
+04081E C1          0210*       pop bc
+04081F C9          0211*       ret
+040820             0212*   
+040820             0213*   ; Make an 8x8 RGBA2222 bitmap with specified colors from an 8x8 mono bitmap
+040820             0214*   ; Params:
+040820             0215*   ;   HL = pointer to monochrome bitmap
+040820             0216*   ;   DE = tile output buffer
+040820             0217*   ;   B = background color
+040820             0218*   ;   C = foreground color
+040820             0219*   MakeTile:
+040820 F5          0220*       push af
+040821 3E 08       0221*       ld a, TileHeight
+040823             0222*   MakeTileRowLoop:
+040823 F5          0223*       push af
+040824 7E          0224*       ld a, (hl)
+040825 CD 32 08 04 0225*       call MakeTileRow
+040829 F1          0226*       pop af
+04082A 23          0227*       inc hl
+04082B 3D          0228*       dec a
+04082C C2 23 08 04 0229*       jp nz, MakeTileRowLoop
+040830 F1          0230*       pop af
+040831 C9          0231*       ret
+040832             0232*   
+040832             0233*   
+040832             0234*   ; make a single row of bytes in an 8x8 tile bitmap
+040832             0235*   ; DE = output pointer
+040832             0236*   ; A = bitmap
+040832             0237*   ; B = background color in RGBA2222 format
+040832             0238*   ; C = foreground color in RGBA2222 format
+040832             0239*   MakeTileRow:
+040832 EB          0240*       ex de, hl
+040833 D5          0241*       push de
+040834 16 08       0242*       ld d, TileWidth
+040836             0243*   MakeTileColLoop:
+040836 87          0244*       add a, a
+040837 70          0245*       ld (hl), b
+040838 DA 3D 08 04 0246*       jp c, MakeTileNextCol
+04083C 71          0247*       ld (hl), c
+04083D             0248*   MakeTileNextCol:
+04083D 23          0249*       inc hl
+04083E 15          0250*       dec d
+04083F C2 36 08 04 0251*       jp nz, MakeTileColLoop
+040843 D1          0252*       pop de
+040844 EB          0253*       ex de, hl
+040845 C9          0254*       ret
+040846             0052    
+040846             0053    ; =============================================================================
+040846             0054    ; constants
+040846             0055    
+040846             0056    NumSinePnts:    equ 8
+040846             0057    NumSineSpeeds:  equ 2
+040846             0058    NumPlasmaFreqs: equ 2
+040846             0059    NumCycleSpeeds: equ 1
+040846             0060    
+040846             0061    ; =============================================================================
+040846             0062    ; central dispatch
+040846             0063    
+040846             0064    Main:                                   ; initialization tasks
+040846 CD 1B 03 04 0065            call    RandomSeed
+04084A CD 3C 0F 04 0066            call    MakeSineTable
+04084E CD 0E 0F 04 0067            call    MakeSpeedCode
+040852 CD 74 02 04 0068            call    InitGraphics
+040856 CD DB 0D 04 0069            call    FirstEffect
+04085A CD EE 02 04 0070            call    EnableInterrupt
+04085E             0071    
+04085E             0072    MainLoop:                               ; repetitive tasks
+04085E 3A 5E 0C 04 0073            ld      a, (HoldEffect)
+040862 B7          0074            or      a
+040863 C2 70 08 04 0075            jp      nz, NoEffectCycle
+040867 21 B6 0D 04 0076            ld      hl, DurationCnt
+04086B 35          0077            dec     (hl)
+04086C CC BA 0D 04 0078            call    z, NextEffect
+040870             0079    NoEffectCycle:
+040870 CD BD 0E 04 0080            call    CalcPlasmaFrame
+040874 CD E9 02 04 0081            call    DrawScreen
+040878 CD 8B 02 04 0082            call    GetKey
+04087C             0083            JumpIf  'q', Exit               ; must be handled from main
+04087C FE 71       0001M           cp      value
+04087E CA 64 02 04 0002M           jp      z, target
+040882 CD 8A 08 04 0084            call    Dispatch
+040886 C3 5E 08 04 0085            jp      MainLoop
+04088A             0086    
+04088A             0087    Dispatch:
+04088A             0088            ; did you remember to add your new command to the help below?
+04088A             0089            JumpIf  '?', ShowHelp
+04088A FE 3F       0001M           cp      value
+04088C CA EF 02 04 0002M           jp      z, target
+040890             0090            JumpIf  'p', NextPalette
+040890 FE 70       0001M           cp      value
+040892 CA 29 0E 04 0002M           jp      z, target
+040896             0091            JumpIf  'h', ToggleHold
+040896 FE 68       0001M           cp      value
+040898 CA 7A 0C 04 0002M           jp      z, target
+04089C             0092            JumpIf  'n', NextEffect
+04089C FE 6E       0001M           cp      value
+04089E CA BA 0D 04 0002M           jp      z, target
+0408A2             0093            JumpIf  'd', InitEffect
+0408A2 FE 64       0001M           cp      value
+0408A4 CA E3 0D 04 0002M           jp      z, target
+0408A8             0094            JumpIf  'a', ToggleAnimation
+0408A8 FE 61       0001M           cp      value
+0408AA CA 6C 0C 04 0002M           jp      z, target
+0408AE             0095            JumpIf  'r', ToggleRandomParams
+0408AE FE 72       0001M           cp      value
+0408B0 CA 61 0C 04 0002M           jp      z, target
+0408B4             0096            JumpIf  'v', ViewParameters
+0408B4 FE 76       0001M           cp      value
+0408B6 CA F7 0C 04 0002M           jp      z, target
+0408BA             0097            JumpIf  'x', SelectSineAddsX
+0408BA FE 78       0001M           cp      value
+0408BC CA FE 0B 04 0002M           jp      z, target
+0408C0             0098            JumpIf  'y', SelectSineAddsY
+0408C0 FE 79       0001M           cp      value
+0408C2 CA 08 0C 04 0002M           jp      z, target
+0408C6             0099            JumpIf  'i', SelectSineStartsY
+0408C6 FE 69       0001M           cp      value
+0408C8 CA 12 0C 04 0002M           jp      z, target
+0408CC             0100            JumpIf  'c', SelectSineSpeeds
+0408CC FE 63       0001M           cp      value
+0408CE CA 1C 0C 04 0002M           jp      z, target
+0408D2             0101            JumpIf  's', SelectPlasmaFreqs
+0408D2 FE 73       0001M           cp      value
+0408D4 CA 26 0C 04 0002M           jp      z, target
+0408D8             0102            JumpIf  'f', SelectCycleSpeed
+0408D8 FE 66       0001M           cp      value
+0408DA CA 30 0C 04 0002M           jp      z, target
+0408DE             0103            JumpIf  '0', ClearParameters
+0408DE FE 30       0001M           cp      value
+0408E0 CA 85 0C 04 0002M           jp      z, target
+0408E4             0104            JumpIf  '>', IncSelected
+0408E4 FE 3E       0001M           cp      value
+0408E6 CA 52 0C 04 0002M           jp      z, target
+0408EA             0105            JumpIf  '<', DecSelected
+0408EA FE 3C       0001M           cp      value
+0408EC CA 58 0C 04 0002M           jp      z, target
+0408F0 C9          0106            ret
+0408F1             0107    
+0408F1             0108    Help:
+0408F1 0D 0A 43 6F 0109            defb    CR, LF, "Commands:", CR, LF
        6D 6D 61 6E 
        64 73 3A 0D 
        0A          
-04091A 20 3F 20 20 0110            defb    " ?     help", CR, LF
+0408FE 20 3F 20 20 0110            defb    " ?     help", CR, LF
        20 20 20 68 
        65 6C 70 0D 
        0A          
-040927 20 71 20 20 0111            defb    " q     quit", CR, LF
+04090B 20 71 20 20 0111            defb    " q     quit", CR, LF
        20 20 20 71 
        75 69 74 0D 
        0A          
-040934 20 68 20 20 0112            defb    " h     hold current effect on/off", CR, LF
+040918 20 68 20 20 0112            defb    " h     hold current effect on/off", CR, LF
        20 20 20 68 
        6F 6C 64 20 
        63 75 72 72 
@@ -2108,31 +2087,31 @@ PC     Output      Line
        63 74 20 6F 
        6E 2F 6F 66 
        66 0D 0A    
-040957 20 70 20 20 0113            defb    " p     switch palette", CR, LF
+04093B 20 70 20 20 0113            defb    " p     switch palette", CR, LF
        20 20 20 73 
        77 69 74 63 
        68 20 70 61 
        6C 65 74 74 
        65 0D 0A    
-04096E 20 6E 20 20 0114            defb    " n     next effect", CR, LF
+040952 20 6E 20 20 0114            defb    " n     next effect", CR, LF
        20 20 20 6E 
        65 78 74 20 
        65 66 66 65 
        63 74 0D 0A 
-040982 20 64 20 20 0115            defb    " d     default values", CR, LF
+040966 20 64 20 20 0115            defb    " d     default values", CR, LF
        20 20 20 64 
        65 66 61 75 
        6C 74 20 76 
        61 6C 75 65 
        73 0D 0A    
-040999 20 61 20 20 0116            defb    " a     animation on/off", CR, LF
+04097D 20 61 20 20 0116            defb    " a     animation on/off", CR, LF
        20 20 20 61 
        6E 69 6D 61 
        74 69 6F 6E 
        20 6F 6E 2F 
        6F 66 66 0D 
        0A          
-0409B2 20 72 20 20 0117            defb    " r     toggle random/playlist", CR, LF
+040996 20 72 20 20 0117            defb    " r     toggle random/playlist", CR, LF
        20 20 20 74 
        6F 67 67 6C 
        65 20 72 61 
@@ -2140,38 +2119,38 @@ PC     Output      Line
        2F 70 6C 61 
        79 6C 69 73 
        74 0D 0A    
-0409D1 20 76 20 20 0118            defb    " v     view parameters", CR, LF, CR, LF
+0409B5 20 76 20 20 0118            defb    " v     view parameters", CR, LF, CR, LF
        20 20 20 76 
        69 65 77 20 
        70 61 72 61 
        6D 65 74 65 
        72 73 0D 0A 
        0D 0A       
-0409EB 50 61 72 61 0119            defb    "Parameter Selection:", CR, LF
+0409CF 50 61 72 61 0119            defb    "Parameter Selection:", CR, LF
        6D 65 74 65 
        72 20 53 65 
        6C 65 63 74 
        69 6F 6E 3A 
        0D 0A       
-040A01 20 78 20 20 0120            defb    " x     x increments", CR, LF
+0409E5 20 78 20 20 0120            defb    " x     x increments", CR, LF
        20 20 20 78 
        20 69 6E 63 
        72 65 6D 65 
        6E 74 73 0D 
        0A          
-040A16 20 79 20 20 0121            defb    " y     y increments", CR, LF
+0409FA 20 79 20 20 0121            defb    " y     y increments", CR, LF
        20 20 20 79 
        20 69 6E 63 
        72 65 6D 65 
        6E 74 73 0D 
        0A          
-040A2B 20 69 20 20 0122            defb    " i     initial values", CR, LF
+040A0F 20 69 20 20 0122            defb    " i     initial values", CR, LF
        20 20 20 69 
        6E 69 74 69 
        61 6C 20 76 
        61 6C 75 65 
        73 0D 0A    
-040A42 20 63 20 20 0123            defb    " c     linear animation speed", CR, LF
+040A26 20 63 20 20 0123            defb    " c     linear animation speed", CR, LF
        20 20 20 6C 
        69 6E 65 61 
        72 20 61 6E 
@@ -2179,7 +2158,7 @@ PC     Output      Line
        69 6F 6E 20 
        73 70 65 65 
        64 0D 0A    
-040A61 20 73 20 20 0124            defb    " s     sine animation speeds", CR, LF
+040A45 20 73 20 20 0124            defb    " s     sine animation speeds", CR, LF
        20 20 20 73 
        69 6E 65 20 
        61 6E 69 6D 
@@ -2187,7 +2166,7 @@ PC     Output      Line
        6E 20 73 70 
        65 65 64 73 
        0D 0A       
-040A7F 20 66 20 20 0125            defb    " f     distortion frequencies", CR, LF, CR, LF
+040A63 20 66 20 20 0125            defb    " f     distortion frequencies", CR, LF, CR, LF
        20 20 20 64 
        69 73 74 6F 
        72 74 69 6F 
@@ -2196,14 +2175,14 @@ PC     Output      Line
        6E 63 69 65 
        73 0D 0A 0D 
        0A          
-040AA0 50 61 72 61 0126            defb    "Parameter Modification:", CR, LF
+040A84 50 61 72 61 0126            defb    "Parameter Modification:", CR, LF
        6D 65 74 65 
        72 20 4D 6F 
        64 69 66 69 
        63 61 74 69 
        6F 6E 3A 0D 
        0A          
-040AB9 20 31 2D 38 0127            defb    " 1-8   increment selected parameter (+ shift to decrement)", CR, LF
+040A9D 20 31 2D 38 0127            defb    " 1-8   increment selected parameter (+ shift to decrement)", CR, LF
        20 20 20 69 
        6E 63 72 65 
        6D 65 6E 74 
@@ -2218,7 +2197,7 @@ PC     Output      Line
        64 65 63 72 
        65 6D 65 6E 
        74 29 0D 0A 
-040AF5 20 30 20 20 0128            defb    " 0     clear selected parameters", CR, LF, EOS
+040AD9 20 30 20 20 0128            defb    " 0     clear selected parameters", CR, LF, EOS
        20 20 20 63 
        6C 65 61 72 
        20 73 65 6C 
@@ -2227,14 +2206,14 @@ PC     Output      Line
        72 61 6D 65 
        74 65 72 73 
        0D 0A 00    
-040B18             0129    
-040B18             0130    About:
-040B18 50 6C 61 73 0131            defb    "Plasma for TMS9918", CR, LF
+040AFC             0129    
+040AFC             0130    About:
+040AFC 50 6C 61 73 0131            defb    "Plasma for TMS9918", CR, LF
        6D 61 20 66 
        6F 72 20 54 
        4D 53 39 39 
        31 38 0D 0A 
-040B2C 5A 38 30 20 0132            defb    "Z80 Code by J.B. Langston", CR, LF, CR, LF
+040B10 5A 38 30 20 0132            defb    "Z80 Code by J.B. Langston", CR, LF, CR, LF
        43 6F 64 65 
        20 62 79 20 
        4A 2E 42 2E 
@@ -2242,7 +2221,7 @@ PC     Output      Line
        67 73 74 6F 
        6E 0D 0A 0D 
        0A          
-040B49 43 6F 6C 6F 0133            defb    "Color Palettes and Sine Routines ported from "
+040B2D 43 6F 6C 6F 0133            defb    "Color Palettes and Sine Routines ported from "
        72 20 50 61 
        6C 65 74 74 
        65 73 20 61 
@@ -2254,7 +2233,7 @@ PC     Output      Line
        74 65 64 20 
        66 72 6F 6D 
        20          
-040B76 50 6C 61 73 0134            defb    "Plascii Petsma by Cruzer/Camelot", CR, LF
+040B5A 50 6C 61 73 0134            defb    "Plascii Petsma by Cruzer/Camelot", CR, LF
        63 69 69 20 
        50 65 74 73 
        6D 61 20 62 
@@ -2263,7 +2242,7 @@ PC     Output      Line
        2F 43 61 6D 
        65 6C 6F 74 
        0D 0A       
-040B98 47 72 61 64 0135            defb    "Gradient Patterns ripped from "
+040B7C 47 72 61 64 0135            defb    "Gradient Patterns ripped from "
        69 65 6E 74 
        20 50 61 74 
        74 65 72 6E 
@@ -2271,7 +2250,7 @@ PC     Output      Line
        70 70 65 64 
        20 66 72 6F 
        6D 20       
-040BB6 50 72 6F 64 0136            defb    "Produkthandler Kom Her by Cruzer/Camelot", CR, LF, CR, LF
+040B9A 50 72 6F 64 0136            defb    "Produkthandler Kom Her by Cruzer/Camelot", CR, LF, CR, LF
        75 6B 74 68 
        61 6E 64 6C 
        65 72 20 4B 
@@ -2282,7 +2261,7 @@ PC     Output      Line
        2F 43 61 6D 
        65 6C 6F 74 
        0D 0A 0D 0A 
-040BE2 50 72 65 73 0137            defb    "Press 'q' to quit, '?' for help.", CR, LF, EOS
+040BC6 50 72 65 73 0137            defb    "Press 'q' to quit, '?' for help.", CR, LF, EOS
        73 20 27 71 
        27 20 74 6F 
        20 71 75 69 
@@ -2291,532 +2270,536 @@ PC     Output      Line
        6F 72 20 68 
        65 6C 70 2E 
        0D 0A 00    
-040C05             0138    
-040C05             0139    ; =============================================================================
-040C05             0140    ; parameter configuration
-040C05             0141    
-040C05             0142    SelectedParameter:
-040C05             0143            DefPointer SineAddsX
-040C05 27 0E 04    0001M           .dl addr
-040C08             0144    SelectedParameterLength:
-040C08 08          0145            defb    NumSinePnts
-040C09             0146    SelectedParameterNumber:
-040C09 00          0147            defb    0
-040C0A             0148    
-040C0A             0149    SelectParameterNumber:
-040C0A             0150            ; for numbers 1-8 set the parameter number
-040C0A D6 31       0151            sub     '1'
-040C0C D8          0152            ret     c
-040C0D 21 09 0C 04 0153            ld      hl, SelectedParameterNumber
-040C11 BE          0154            cp      (hl)
-040C12 D0          0155            ret     nc
-040C13 32 09 0C 04 0156            ld      (SelectedParameterNumber), a
-040C17             0157    InvalidParameterNumber:
-040C17 C6 31       0158            add     '1'
-040C19 C9          0159            ret
-040C1A             0160    
-040C1A             0161            macro SelectParam addr, length
-040C1A             0162            ld      hl, addr
-040C1A             0163            ld      a, length
-040C1A             0164            jp      SelectGeneric
-040C1A             0165            endmacro
-040C1A             0166    
-040C1A             0167    SelectSineAddsX:
-040C1A             0168            SelectParam SineAddsX, NumSinePnts
-040C1A 21 27 0E 04 0001M           ld      hl, addr
-040C1E 3E 08       0002M           ld      a, length
-040C20 C3 56 0C 04 0003M           jp      SelectGeneric
-040C24             0169    SelectSineAddsY:
-040C24             0170            SelectParam SineAddsY, NumSinePnts
-040C24 21 2F 0E 04 0001M           ld      hl, addr
-040C28 3E 08       0002M           ld      a, length
-040C2A C3 56 0C 04 0003M           jp      SelectGeneric
-040C2E             0171    SelectSineStartsY:
-040C2E             0172            SelectParam SineStartsY, NumSinePnts
-040C2E 21 37 0E 04 0001M           ld      hl, addr
-040C32 3E 08       0002M           ld      a, length
-040C34 C3 56 0C 04 0003M           jp      SelectGeneric
-040C38             0173    SelectSineSpeeds:
-040C38             0174            SelectParam SineSpeeds, NumSineSpeeds
-040C38 21 3F 0E 04 0001M           ld      hl, addr
-040C3C 3E 02       0002M           ld      a, length
-040C3E C3 56 0C 04 0003M           jp      SelectGeneric
-040C42             0175    SelectPlasmaFreqs:
-040C42             0176            SelectParam PlasmaFreqs, NumPlasmaFreqs
-040C42 21 41 0E 04 0001M           ld      hl, addr
-040C46 3E 02       0002M           ld      a, length
-040C48 C3 56 0C 04 0003M           jp      SelectGeneric
-040C4C             0177    SelectCycleSpeed:
-040C4C             0178            SelectParam CycleSpeed, NumCycleSpeeds
-040C4C 21 43 0E 04 0001M           ld      hl, addr
-040C50 3E 01       0002M           ld      a, length
-040C52 C3 56 0C 04 0003M           jp      SelectGeneric
-040C56             0179    
-040C56             0180    SelectGeneric:
-040C56 22 05 0C 04 0181            ld      (SelectedParameter), hl
-040C5A 32 08 0C 04 0182            ld      (SelectedParameterLength), a
-040C5E C9          0183            ret
-040C5F             0184    
-040C5F             0185    GetSelected:
-040C5F 2A 05 0C 04 0186            ld      hl, (SelectedParameter)
-040C63 3A 09 0C 04 0187            ld      a, (SelectedParameterNumber)
-040C67 11 00 00 00 0188            ld      de, 0
-040C6B 5F          0189            ld      e, a
-040C6C 19          0190            add     hl, de
-040C6D C9          0191            ret
-040C6E             0192    
-040C6E             0193    IncSelected:
-040C6E CD 5F 0C 04 0194            call    GetSelected
-040C72 34          0195            inc     (hl)
-040C73 C9          0196            ret
-040C74             0197    
-040C74             0198    DecSelected:
-040C74 CD 5F 0C 04 0199            call    GetSelected
-040C78 35          0200            dec     (hl)
-040C79 C9          0201            ret
-040C7A             0202    
-040C7A             0203    ; feature toggles
-040C7A             0204    HoldEffect:
-040C7A 00          0205            defb    0
-040C7B             0206    StopAnimation:
-040C7B 00          0207            defb    0
-040C7C             0208    UseRandomParams:
-040C7C 00          0209            defb    0
-040C7D             0210    
-040C7D             0211    ToggleRandomParams:
-040C7D 3A 7C 0C 04 0212            ld      a, (UseRandomParams)
-040C81 EE FF       0213            xor     $ff
-040C83 32 7C 0C 04 0214            ld      (UseRandomParams), a
-040C87 C9          0215            ret
-040C88             0216    
-040C88             0217    ToggleAnimation:
-040C88 3A 7B 0C 04 0218            ld      a, (StopAnimation)
-040C8C EE FF       0219            xor     $ff
-040C8E 32 7B 0C 04 0220            ld      (StopAnimation), a
-040C92 C3 BA 0E 04 0221            jp      UpdateScreen
-040C96             0222    
-040C96             0223    ToggleHold:
-040C96 3A 7A 0C 04 0224            ld      a, (HoldEffect)
-040C9A EE FF       0225            xor     $ff
-040C9C 32 7A 0C 04 0226            ld      (HoldEffect), a
-040CA0 C9          0227            ret
-040CA1             0228    
-040CA1             0229    ; reset selected parameter values to 0
-040CA1             0230    ClearParameters:
-040CA1 2A 05 0C 04 0231            ld      hl, (SelectedParameter)
-040CA5 3A 08 0C 04 0232            ld      a, (SelectedParameterLength)
-040CA9 47          0233            ld      b, a
-040CAA AF          0234            xor     a
-040CAB             0235    ClearParameterLoop:
-040CAB 77          0236            ld      (hl), a
-040CAC 23          0237            inc     hl
-040CAD 10 FC       0238            djnz    ClearParameterLoop
-040CAF C3 57 0E 04 0239            jp      CalcPlasmaStarts
-040CB3             0240    
-040CB3             0241    SineAddsXMsg:
-040CB3 0D 0A 78 20 0242            defb CR, LF, "x increment: ", EOS
+040BE9             0138    
+040BE9             0139    ; =============================================================================
+040BE9             0140    ; parameter configuration
+040BE9             0141    
+040BE9             0142    SelectedParameter:
+040BE9             0143            DefPointer SineAddsX
+040BE9 0B 0E 04    0001M           .dl addr
+040BEC             0144    SelectedParameterLength:
+040BEC 08          0145            defb    NumSinePnts
+040BED             0146    SelectedParameterNumber:
+040BED 00          0147            defb    0
+040BEE             0148    
+040BEE             0149    SelectParameterNumber:
+040BEE             0150            ; for numbers 1-8 set the parameter number
+040BEE D6 31       0151            sub     '1'
+040BF0 D8          0152            ret     c
+040BF1 21 ED 0B 04 0153            ld      hl, SelectedParameterNumber
+040BF5 BE          0154            cp      (hl)
+040BF6 D0          0155            ret     nc
+040BF7 32 ED 0B 04 0156            ld      (SelectedParameterNumber), a
+040BFB             0157    InvalidParameterNumber:
+040BFB C6 31       0158            add     '1'
+040BFD C9          0159            ret
+040BFE             0160    
+040BFE             0161            macro SelectParam addr, length
+040BFE             0162            ld      hl, addr
+040BFE             0163            ld      a, length
+040BFE             0164            jp      SelectGeneric
+040BFE             0165            endmacro
+040BFE             0166    
+040BFE             0167    SelectSineAddsX:
+040BFE             0168            SelectParam SineAddsX, NumSinePnts
+040BFE 21 0B 0E 04 0001M           ld      hl, addr
+040C02 3E 08       0002M           ld      a, length
+040C04 C3 3A 0C 04 0003M           jp      SelectGeneric
+040C08             0169    SelectSineAddsY:
+040C08             0170            SelectParam SineAddsY, NumSinePnts
+040C08 21 13 0E 04 0001M           ld      hl, addr
+040C0C 3E 08       0002M           ld      a, length
+040C0E C3 3A 0C 04 0003M           jp      SelectGeneric
+040C12             0171    SelectSineStartsY:
+040C12             0172            SelectParam SineStartsY, NumSinePnts
+040C12 21 1B 0E 04 0001M           ld      hl, addr
+040C16 3E 08       0002M           ld      a, length
+040C18 C3 3A 0C 04 0003M           jp      SelectGeneric
+040C1C             0173    SelectSineSpeeds:
+040C1C             0174            SelectParam SineSpeeds, NumSineSpeeds
+040C1C 21 23 0E 04 0001M           ld      hl, addr
+040C20 3E 02       0002M           ld      a, length
+040C22 C3 3A 0C 04 0003M           jp      SelectGeneric
+040C26             0175    SelectPlasmaFreqs:
+040C26             0176            SelectParam PlasmaFreqs, NumPlasmaFreqs
+040C26 21 25 0E 04 0001M           ld      hl, addr
+040C2A 3E 02       0002M           ld      a, length
+040C2C C3 3A 0C 04 0003M           jp      SelectGeneric
+040C30             0177    SelectCycleSpeed:
+040C30             0178            SelectParam CycleSpeed, NumCycleSpeeds
+040C30 21 27 0E 04 0001M           ld      hl, addr
+040C34 3E 01       0002M           ld      a, length
+040C36 C3 3A 0C 04 0003M           jp      SelectGeneric
+040C3A             0179    
+040C3A             0180    SelectGeneric:
+040C3A 22 E9 0B 04 0181            ld      (SelectedParameter), hl
+040C3E 32 EC 0B 04 0182            ld      (SelectedParameterLength), a
+040C42 C9          0183            ret
+040C43             0184    
+040C43             0185    GetSelected:
+040C43 2A E9 0B 04 0186            ld      hl, (SelectedParameter)
+040C47 3A ED 0B 04 0187            ld      a, (SelectedParameterNumber)
+040C4B 11 00 00 00 0188            ld      de, 0
+040C4F 5F          0189            ld      e, a
+040C50 19          0190            add     hl, de
+040C51 C9          0191            ret
+040C52             0192    
+040C52             0193    IncSelected:
+040C52 CD 43 0C 04 0194            call    GetSelected
+040C56 34          0195            inc     (hl)
+040C57 C9          0196            ret
+040C58             0197    
+040C58             0198    DecSelected:
+040C58 CD 43 0C 04 0199            call    GetSelected
+040C5C 35          0200            dec     (hl)
+040C5D C9          0201            ret
+040C5E             0202    
+040C5E             0203    ; feature toggles
+040C5E             0204    HoldEffect:
+040C5E 00          0205            defb    0
+040C5F             0206    StopAnimation:
+040C5F 00          0207            defb    0
+040C60             0208    UseRandomParams:
+040C60 00          0209            defb    0
+040C61             0210    
+040C61             0211    ToggleRandomParams:
+040C61 3A 60 0C 04 0212            ld      a, (UseRandomParams)
+040C65 EE FF       0213            xor     $ff
+040C67 32 60 0C 04 0214            ld      (UseRandomParams), a
+040C6B C9          0215            ret
+040C6C             0216    
+040C6C             0217    ToggleAnimation:
+040C6C 3A 5F 0C 04 0218            ld      a, (StopAnimation)
+040C70 EE FF       0219            xor     $ff
+040C72 32 5F 0C 04 0220            ld      (StopAnimation), a
+040C76 C3 9E 0E 04 0221            jp      UpdateScreen
+040C7A             0222    
+040C7A             0223    ToggleHold:
+040C7A 3A 5E 0C 04 0224            ld      a, (HoldEffect)
+040C7E EE FF       0225            xor     $ff
+040C80 32 5E 0C 04 0226            ld      (HoldEffect), a
+040C84 C9          0227            ret
+040C85             0228    
+040C85             0229    ; reset selected parameter values to 0
+040C85             0230    ClearParameters:
+040C85 2A E9 0B 04 0231            ld      hl, (SelectedParameter)
+040C89 3A EC 0B 04 0232            ld      a, (SelectedParameterLength)
+040C8D 47          0233            ld      b, a
+040C8E AF          0234            xor     a
+040C8F             0235    ClearParameterLoop:
+040C8F 77          0236            ld      (hl), a
+040C90 23          0237            inc     hl
+040C91 10 FC       0238            djnz    ClearParameterLoop
+040C93 C3 3B 0E 04 0239            jp      CalcPlasmaStarts
+040C97             0240    
+040C97             0241    SineAddsXMsg:
+040C97 0D 0A 78 20 0242            defb CR, LF, "x increment: ", EOS
        69 6E 63 72 
        65 6D 65 6E 
        74 3A 20 00 
-040CC3             0243    SineAddsYMsg:
-040CC3 0D 0A 79 20 0244            defb CR, LF, "y increment: ", EOS
+040CA7             0243    SineAddsYMsg:
+040CA7 0D 0A 79 20 0244            defb CR, LF, "y increment: ", EOS
        69 6E 63 72 
        65 6D 65 6E 
        74 3A 20 00 
-040CD3             0245    SineStartsMsg:
-040CD3 0D 0A 69 6E 0246            defb CR, LF, "init values: ", EOS
+040CB7             0245    SineStartsMsg:
+040CB7 0D 0A 69 6E 0246            defb CR, LF, "init values: ", EOS
        69 74 20 76 
        61 6C 75 65 
        73 3A 20 00 
-040CE3             0247    SineSpeedsMsg:
-040CE3 0D 0A 73 69 0248            defb CR, LF, "sine speeds: ", EOS
+040CC7             0247    SineSpeedsMsg:
+040CC7 0D 0A 73 69 0248            defb CR, LF, "sine speeds: ", EOS
        6E 65 20 73 
        70 65 65 64 
        73 3A 20 00 
-040CF3             0249    PlasmaFreqMsg:
-040CF3 0D 0A 70 6C 0250            defb CR, LF, "plasma freq: ", EOS
+040CD7             0249    PlasmaFreqMsg:
+040CD7 0D 0A 70 6C 0250            defb CR, LF, "plasma freq: ", EOS
        61 73 6D 61 
        20 66 72 65 
        71 3A 20 00 
-040D03             0251    CycleSpeedMsg:
-040D03 0D 0A 63 79 0252            defb CR, LF, "cycle speed: ", EOS
+040CE7             0251    CycleSpeedMsg:
+040CE7 0D 0A 63 79 0252            defb CR, LF, "cycle speed: ", EOS
        63 6C 65 20 
        73 70 65 65 
        64 3A 20 00 
-040D13             0253    
-040D13             0254    ; display current parameter values
-040D13             0255    ViewParameters:
-040D13 21 27 0E 04 0256            ld      hl, PlasmaParams
-040D17 11 B3 0C 04 0257            ld      de, SineAddsXMsg
-040D1B CD 58 0D 04 0258            call    ShowSinePnts
-040D1F 11 C3 0C 04 0259            ld      de, SineAddsYMsg
-040D23 CD 58 0D 04 0260            call    ShowSinePnts
-040D27 11 D3 0C 04 0261            ld      de, SineStartsMsg
-040D2B CD 58 0D 04 0262            call    ShowSinePnts
-040D2F 11 E3 0C 04 0263            ld      de, SineSpeedsMsg
-040D33 CD 52 0D 04 0264            call    ShowTwoParams
-040D37 11 F3 0C 04 0265            ld      de, PlasmaFreqMsg
-040D3B CD 52 0D 04 0266            call    ShowTwoParams
-040D3F 11 03 0D 04 0267            ld      de, CycleSpeedMsg
-040D43 CD 4C 0D 04 0268            call    ShowOneParam
-040D47 CD 61 00 04 0269            call    NewLine
-040D4B C9          0270            ret
-040D4C             0271    ShowOneParam:
-040D4C 06 01       0272            ld      b, 1
-040D4E C3 5A 0D 04 0273            jp      ShowBParams
-040D52             0274    ShowTwoParams:
-040D52 06 02       0275            ld      b, 2
-040D54 C3 5A 0D 04 0276            jp      ShowBParams
-040D58             0277    ShowSinePnts:
-040D58 06 08       0278            ld      b, NumSinePnts
-040D5A             0279    ShowBParams:
-040D5A E5          0280            push    hl
-040D5B C5          0281            push    bc
-040D5C CD 48 00 04 0282            call    StringOut
-040D60 C1          0283            pop     bc
-040D61 E1          0284            pop     hl
-040D62             0285    ShowParameterLoop:
-040D62 7E          0286            ld      a, (hl)
-040D63 23          0287            inc     hl
-040D64 E5          0288            push    hl
-040D65 C5          0289            push    bc
-040D66 CD 0C 03 04 0290            call    HexByte
-040D6A CD 5A 00 04 0291            call    Space
-040D6E C1          0292            pop     bc
-040D6F E1          0293            pop     hl
-040D70 10 F0       0294            djnz    ShowParameterLoop
-040D72 C9          0295            ret
-040D73             0296    
-040D73             0297    ; RandomParameters generates a complete set of random parameters
-040D73             0298    RandomParameters:
-040D73 16 00       0299            ld      d, 0
-040D75 0E 07       0300            ld      c, 7                    ; -8 to 7
-040D77 06 08       0301            ld      b, NumSinePnts
-040D79 21 27 0E 04 0302            ld      hl, SineAddsX
-040D7D CD 71 03 04 0303            call    RandomSeries
-040D81 0E 03       0304            ld      c, 3                    ; -4 to 3
-040D83 06 08       0305            ld      b, NumSinePnts
-040D85 21 2F 0E 04 0306            ld      hl, SineAddsY
-040D89 CD 71 03 04 0307            call    RandomSeries
-040D8D 0E 7F       0308            ld      c, $7f                  ; -128 to 127
-040D8F 06 08       0309            ld      b, NumSinePnts
-040D91 21 37 0E 04 0310            ld      hl, SineStartsY
-040D95 CD 71 03 04 0311            call    RandomSeries
-040D99 0E 03       0312            ld      c, 3                    ; -4 to 3
-040D9B 06 02       0313            ld      b, 2
-040D9D 21 3F 0E 04 0314            ld      hl, SineSpeeds
-040DA1 CD 71 03 04 0315            call    RandomSeries
-040DA5 0E 03       0316            ld      c, 3                    ; 1 to 8
-040DA7 16 05       0317            ld      d, 5
-040DA9 06 02       0318            ld      b, 2
-040DAB 21 41 0E 04 0319            ld      hl, PlasmaFreqs
-040DAF CD 71 03 04 0320            call    RandomSeries
-040DB3 0E 07       0321            ld      c, 7                    ; -16 to -1
-040DB5 16 F8       0322            ld      d, -8
-040DB7 06 01       0323            ld      b, 1
-040DB9 21 43 0E 04 0324            ld      hl, CycleSpeed
-040DBD CD 71 03 04 0325            call    RandomSeries
-040DC1 CD 4F 03 04 0326            call    RandomNumber            ; randomly select palette
-040DC5 7D          0327            ld      a, l
-040DC6 32 44 0E 04 0328            ld      (ColorPalette), a
-040DCA CD 57 0E 04 0329            call    CalcPlasmaStarts
-040DCE C3 79 07 04 0330            jp      LoadPalette
-040DD2             0331    
-040DD2             0332    ; =============================================================================
-040DD2             0333    ; effect intialization
-040DD2             0334    
-040DD2             0335    DurationCnt:
-040DD2 00          0336            defb    0
-040DD3             0337    PlasmaParamPnt:
-040DD3             0338            DefPointer    0
-040DD3 00 00 00    0001M           .dl addr
-040DD6             0339    
-040DD6             0340    NextEffect:
-040DD6 3A 7C 0C 04 0341            ld      a, (UseRandomParams)
-040DDA B7          0342            or      a
-040DDB C2 73 0D 04 0343            jp      nz, RandomParameters
-040DDF 2A D3 0D 04 0344            ld      hl, (PlasmaParamPnt)
-040DE3 11 1E 00 00 0345            ld      de, PlasmaParamLen
-040DE7 19          0346            add     hl, de
-040DE8 22 D3 0D 04 0347            ld      (PlasmaParamPnt), hl
-040DEC 11 89 06 04 0348            ld      de, LastPlasmaParam
-040DF0 B7          0349            or      a
-040DF1 ED 52       0350            sbc     hl, de
-040DF3 DA FF 0D 04 0351            jp      c, InitEffect
-040DF7             0352            ; fallthrough
-040DF7             0353    
-040DF7             0354    FirstEffect:
-040DF7 21 21 05 04 0355            ld      hl, PlasmaParamList
-040DFB 22 D3 0D 04 0356            ld      (PlasmaParamPnt), hl
-040DFF             0357            ; fallthrough
-040DFF             0358    
-040DFF             0359    InitEffect:
-040DFF 2A D3 0D 04 0360            ld      hl, (PlasmaParamPnt)            ; copy parameters
-040E03 11 27 0E 04 0361            ld      de, PlasmaParams
-040E07 01 1E 00 00 0362            ld      bc, PlasmaParamLen
-040E0B ED B0       0363            ldir
-040E0D             0364    
-040E0D AF          0365            xor     a                               ; reset counters
-040E0E 32 15 0F 04 0366            ld      (PlasmaCnts), a
-040E12 32 16 0F 04 0367            ld      (PlasmaCnts+1), a
-040E16 32 17 0F 04 0368            ld      (CycleCnt), a
-040E1A 32 D2 0D 04 0369            ld      (DurationCnt), a
-040E1E             0370    
-040E1E CD 57 0E 04 0371            call    CalcPlasmaStarts
-040E22 CD 79 07 04 0372            call    LoadPalette
-040E26 C9          0373            ret
-040E27             0374    
-040E27             0375    ; =============================================================================
-040E27             0376    ; plasma calculations
-040E27             0377    
-040E27             0378    ; PlasmaParams holds parameters for the current effect
-040E27             0379    PlasmaParams:
-040E27             0380    SineAddsX:
-040E27             0381            defs    NumSinePnts
-040E2F             0382    SineAddsY:
-040E2F             0383            defs    NumSinePnts
-040E37             0384    SineStartsY:
-040E37             0385            defs    NumSinePnts
-040E3F             0386    SineSpeeds:
-040E3F             0387            defs    NumSineSpeeds
-040E41             0388    PlasmaFreqs:
-040E41             0389            defs    NumPlasmaFreqs
-040E43             0390    CycleSpeed:
-040E43             0391            defs    NumCycleSpeeds
-040E44             0392    ColorPalette:
-040E44 00          0393            defb    0
-040E45             0394    PlasmaParamLen: equ $ - PlasmaParams
-040E45             0395    
-040E45             0396    ; NextPalette changes to the next color palette
-040E45             0397    NextPalette:
-040E45 21 44 0E 04 0398            ld      hl, ColorPalette        ; increment the palette number
-040E49 34          0399            inc     (hl)
-040E4A 7E          0400            ld      a, (hl)
-040E4B FE 0D       0401            cp      ColorPaletteCount       ; check if it's beyond the last one
-040E4D DA 79 07 04 0402            jp      c, LoadPalette          ; if not, load it
-040E51 AF          0403            xor     a                       ; if so, wrap around to the first one
-040E52 77          0404            ld      (hl), a
-040E53 C3 79 07 04 0405            jp      LoadPalette
-040E57             0406    
-040E57             0407    
-040E57             0408    ; CalcPlasmaStarts calculates the initial value for each tile by summing together 8 sine waves of
-040E57             0409    ; varying frequencies which combine to create the contours of a still image. Each sine wave is
-040E57             0410    ; defined by a StartAngle, RowFreq and ColFreq which are applied to each X, Y coordinate as:
-040E57             0411    ; StillFrame(x,y) = sum[n=1..8]: sin(StartAngle[n] + ColFreq[n] * x + RowFreq[n] * y)
-040E57             0412    
-040E57             0413    ; The calculation of the input angle for each X and Y coordinate is accomplished by successive
-040E57             0414    ; additions of the RowFreq and ColFreq values for to the respective RowAngle and ColAngle
-040E57             0415    ; accumulators.
-040E57             0416    CalcPlasmaStarts:
-040E57 21 37 0E 04 0417            ld      hl, SineStartsY         ; for each of 8 sine waves,
-040E5B 11 D1 0E 04 0418            ld      de, SinePntsY           ; initialize SinePntsY to SineStartsY
-040E5F 01 08 00 00 0419            ld      bc, NumSinePnts
-040E63 ED B0       0420            ldir
-040E65 21 00 12 04 0421            ld      hl, PlasmaStarts
-040E69 0E 1E       0422            ld      c, ScreenHeight         ; for each row...
-040E6B             0423    YLoop:
-040E6B D9          0424            exx
-040E6C 01 D1 0E 04 0425            ld      bc, SinePntsY
-040E70 21 2F 0E 04 0426            ld      hl, SineAddsY
-040E74 11 C9 0E 04 0427            ld      de, SinePntsX
-040E78 D9          0428            exx
-040E79 16 08       0429            ld      d, NumSinePnts
-040E7B             0430    SinePntsYLoop:
-040E7B D9          0431            exx                             ; for each sine wave...
-040E7C 0A          0432            ld      a, (bc)
-040E7D 86          0433            add     a, (hl)                 ; add SineAddsY to SinePntsY
-040E7E 02          0434            ld      (bc), a
-040E7F 12          0435            ld      (de), a                 ; initialize SinePntsX to SinePntsY
-040E80 03          0436            inc     bc
-040E81 13          0437            inc     de
-040E82 23          0438            inc     hl
-040E83 D9          0439            exx
-040E84 15          0440            dec     d
-040E85 C2 7B 0E 04 0441            jp      nz, SinePntsYLoop       ; ... next sine wave
-040E89 06 28       0442            ld      b, ScreenWidth          ; for each column...
-040E8B             0443    XLoop:
-040E8B D9          0444            exx
-040E8C 11 C9 0E 04 0445            ld      de, SinePntsX
-040E90 21 27 0E 04 0446            ld      hl, SineAddsX
-040E94 06 08       0447            ld      b, NumSinePnts          ; for each sine wave...
-040E96             0448    SinePntsXLoop:
-040E96 1A          0449            ld      a, (de)
-040E97 86          0450            add     a, (hl)                 ; add SineAddsX to SinePntsX
-040E98 12          0451            ld      (de), a
-040E99 13          0452            inc     de
-040E9A 23          0453            inc     hl
-040E9B 10 F9       0454            djnz    SinePntsXLoop           ; ... next sine wave
-040E9D             0455    
-040E9D 21 00 10 04 0456            ld      hl, SineTable
-040EA1 11 C9 0E 04 0457            ld      de, SinePntsX
-040EA5 AF          0458            xor     a                       ; initialize to zero
-040EA6 06 08       0459            ld      b, NumSinePnts          ; for each sine wave...
-040EA8             0460    SineAddLoop:
-040EA8 08          0461            ex      af, af'
-040EA9 1A          0462            ld      a, (de)                 ; look up SinePntsX in SineTable
-040EAA 6F          0463            ld      l, a
-040EAB 08          0464            ex      af, af'
-040EAC 86          0465            add     a, (hl)                 ; accumulate values from SineTable
-040EAD 13          0466            inc     de
-040EAE 10 F8       0467            djnz    SineAddLoop             ; ...next sine wave
-040EB0 D9          0468            exx
-040EB1 77          0469            ld      (hl), a                 ; save accumulated value in PlasmaStarts
-040EB2 23          0470            inc     hl
-040EB3 10 D6       0471            djnz    XLoop                   ; ... next column
-040EB5 0D          0472            dec     c
-040EB6 C2 6B 0E 04 0473            jp      nz, YLoop               ; ... next row
-040EBA             0474    UpdateScreen:
-040EBA 21 00 12 04 0475            ld      hl, PlasmaStarts        ; transfer PlasmaStarts to screen buffer
-040EBE 11 B0 16 04 0476            ld      de, ScreenBuffer
-040EC2 01 B0 04 00 0477            ld      bc, ScreenSize
-040EC6 ED B0       0478            ldir
-040EC8 C9          0479            ret
-040EC9             0480    
-040EC9             0481    SinePntsX:
-040EC9             0482            defs    NumSinePnts
-040ED1             0483    SinePntsY:
-040ED1             0484            defs    NumSinePnts
-040ED9             0485    
-040ED9             0486    ; CalcPlasmaFrame applies distortion and color cycling effects to the original image StillFrame.
-040ED9             0487    ;
-040ED9             0488    ; For each frame, tiles are shifted based on LinearSpeed and two SineSpeeds.  In addition, each
-040ED9             0489    ; row is warped by sine waves defined by two RowWarp parameters. For each row y of frame f, the
-040ED9             0490    ; total offset applied to each tile of StillFrame is calcualted according to this formula:
-040ED9             0491    ; D(f,y) = LinearSpeed * f + (sum [n=0..1]: sin(SineSpeed[n] * f + RowWarp[n] * y)) / 2
-040ED9             0492    CalcPlasmaFrame:
-040ED9 3A 7B 0C 04 0493            ld      a, (StopAnimation)
-040EDD B7          0494            or      a
-040EDE C0          0495            ret     nz
-040EDF 01 15 0F 04 0496            ld      bc, PlasmaCnts
-040EE3 ED 5B 3F 0E 0497            ld      de, (SineSpeeds)
+040CF7             0253    
+040CF7             0254    ; display current parameter values
+040CF7             0255    ViewParameters:
+040CF7 21 0B 0E 04 0256            ld      hl, PlasmaParams
+040CFB 11 97 0C 04 0257            ld      de, SineAddsXMsg
+040CFF CD 3C 0D 04 0258            call    ShowSinePnts
+040D03 11 A7 0C 04 0259            ld      de, SineAddsYMsg
+040D07 CD 3C 0D 04 0260            call    ShowSinePnts
+040D0B 11 B7 0C 04 0261            ld      de, SineStartsMsg
+040D0F CD 3C 0D 04 0262            call    ShowSinePnts
+040D13 11 C7 0C 04 0263            ld      de, SineSpeedsMsg
+040D17 CD 36 0D 04 0264            call    ShowTwoParams
+040D1B 11 D7 0C 04 0265            ld      de, PlasmaFreqMsg
+040D1F CD 36 0D 04 0266            call    ShowTwoParams
+040D23 11 E7 0C 04 0267            ld      de, CycleSpeedMsg
+040D27 CD 30 0D 04 0268            call    ShowOneParam
+040D2B CD 61 00 04 0269            call    NewLine
+040D2F C9          0270            ret
+040D30             0271    ShowOneParam:
+040D30 06 01       0272            ld      b, 1
+040D32 C3 3E 0D 04 0273            jp      ShowBParams
+040D36             0274    ShowTwoParams:
+040D36 06 02       0275            ld      b, 2
+040D38 C3 3E 0D 04 0276            jp      ShowBParams
+040D3C             0277    ShowSinePnts:
+040D3C 06 08       0278            ld      b, NumSinePnts
+040D3E             0279    ShowBParams:
+040D3E E5          0280            push    hl
+040D3F C5          0281            push    bc
+040D40 CD 48 00 04 0282            call    StringOut
+040D44 C1          0283            pop     bc
+040D45 E1          0284            pop     hl
+040D46             0285    ShowParameterLoop:
+040D46 7E          0286            ld      a, (hl)
+040D47 23          0287            inc     hl
+040D48 E5          0288            push    hl
+040D49 C5          0289            push    bc
+040D4A CD F0 02 04 0290            call    HexByte
+040D4E CD 5A 00 04 0291            call    Space
+040D52 C1          0292            pop     bc
+040D53 E1          0293            pop     hl
+040D54 10 F0       0294            djnz    ShowParameterLoop
+040D56 C9          0295            ret
+040D57             0296    
+040D57             0297    ; RandomParameters generates a complete set of random parameters
+040D57             0298    RandomParameters:
+040D57 16 00       0299            ld      d, 0
+040D59 0E 07       0300            ld      c, 7                    ; -8 to 7
+040D5B 06 08       0301            ld      b, NumSinePnts
+040D5D 21 0B 0E 04 0302            ld      hl, SineAddsX
+040D61 CD 55 03 04 0303            call    RandomSeries
+040D65 0E 03       0304            ld      c, 3                    ; -4 to 3
+040D67 06 08       0305            ld      b, NumSinePnts
+040D69 21 13 0E 04 0306            ld      hl, SineAddsY
+040D6D CD 55 03 04 0307            call    RandomSeries
+040D71 0E 7F       0308            ld      c, $7f                  ; -128 to 127
+040D73 06 08       0309            ld      b, NumSinePnts
+040D75 21 1B 0E 04 0310            ld      hl, SineStartsY
+040D79 CD 55 03 04 0311            call    RandomSeries
+040D7D 0E 03       0312            ld      c, 3                    ; -4 to 3
+040D7F 06 02       0313            ld      b, 2
+040D81 21 23 0E 04 0314            ld      hl, SineSpeeds
+040D85 CD 55 03 04 0315            call    RandomSeries
+040D89 0E 03       0316            ld      c, 3                    ; 1 to 8
+040D8B 16 05       0317            ld      d, 5
+040D8D 06 02       0318            ld      b, 2
+040D8F 21 25 0E 04 0319            ld      hl, PlasmaFreqs
+040D93 CD 55 03 04 0320            call    RandomSeries
+040D97 0E 07       0321            ld      c, 7                    ; -16 to -1
+040D99 16 F8       0322            ld      d, -8
+040D9B 06 01       0323            ld      b, 1
+040D9D 21 27 0E 04 0324            ld      hl, CycleSpeed
+040DA1 CD 55 03 04 0325            call    RandomSeries
+040DA5 CD 33 03 04 0326            call    RandomNumber            ; randomly select palette
+040DA9 7D          0327            ld      a, l
+040DAA 32 28 0E 04 0328            ld      (ColorPalette), a
+040DAE CD 3B 0E 04 0329            call    CalcPlasmaStarts
+040DB2 C3 5D 07 04 0330            jp      LoadPalette
+040DB6             0331    
+040DB6             0332    ; =============================================================================
+040DB6             0333    ; effect intialization
+040DB6             0334    
+040DB6             0335    DurationCnt:
+040DB6 00          0336            defb    0
+040DB7             0337    PlasmaParamPnt:
+040DB7             0338            DefPointer    0
+040DB7 00 00 00    0001M           .dl addr
+040DBA             0339    
+040DBA             0340    NextEffect:
+040DBA 3A 60 0C 04 0341            ld      a, (UseRandomParams)
+040DBE B7          0342            or      a
+040DBF C2 57 0D 04 0343            jp      nz, RandomParameters
+040DC3 2A B7 0D 04 0344            ld      hl, (PlasmaParamPnt)
+040DC7 11 1E 00 00 0345            ld      de, PlasmaParamLen
+040DCB 19          0346            add     hl, de
+040DCC 22 B7 0D 04 0347            ld      (PlasmaParamPnt), hl
+040DD0 11 6D 06 04 0348            ld      de, LastPlasmaParam
+040DD4 B7          0349            or      a
+040DD5 ED 52       0350            sbc     hl, de
+040DD7 DA E3 0D 04 0351            jp      c, InitEffect
+040DDB             0352            ; fallthrough
+040DDB             0353    
+040DDB             0354    FirstEffect:
+040DDB 21 05 05 04 0355            ld      hl, PlasmaParamList
+040DDF 22 B7 0D 04 0356            ld      (PlasmaParamPnt), hl
+040DE3             0357            ; fallthrough
+040DE3             0358    
+040DE3             0359    InitEffect:
+040DE3 2A B7 0D 04 0360            ld      hl, (PlasmaParamPnt)            ; copy parameters
+040DE7 11 0B 0E 04 0361            ld      de, PlasmaParams
+040DEB 01 1E 00 00 0362            ld      bc, PlasmaParamLen
+040DEF ED B0       0363            ldir
+040DF1             0364    
+040DF1 AF          0365            xor     a                               ; reset counters
+040DF2 32 F9 0E 04 0366            ld      (PlasmaCnts), a
+040DF6 32 FA 0E 04 0367            ld      (PlasmaCnts+1), a
+040DFA 32 FB 0E 04 0368            ld      (CycleCnt), a
+040DFE 32 B6 0D 04 0369            ld      (DurationCnt), a
+040E02             0370    
+040E02 CD 3B 0E 04 0371            call    CalcPlasmaStarts
+040E06 CD 5D 07 04 0372            call    LoadPalette
+040E0A C9          0373            ret
+040E0B             0374    
+040E0B             0375    ; =============================================================================
+040E0B             0376    ; plasma calculations
+040E0B             0377    
+040E0B             0378    ; PlasmaParams holds parameters for the current effect
+040E0B             0379    PlasmaParams:
+040E0B             0380    SineAddsX:
+040E0B             0381            defs    NumSinePnts
+040E13             0382    SineAddsY:
+040E13             0383            defs    NumSinePnts
+040E1B             0384    SineStartsY:
+040E1B             0385            defs    NumSinePnts
+040E23             0386    SineSpeeds:
+040E23             0387            defs    NumSineSpeeds
+040E25             0388    PlasmaFreqs:
+040E25             0389            defs    NumPlasmaFreqs
+040E27             0390    CycleSpeed:
+040E27             0391            defs    NumCycleSpeeds
+040E28             0392    ColorPalette:
+040E28 00          0393            defb    0
+040E29             0394    PlasmaParamLen: equ $ - PlasmaParams
+040E29             0395    
+040E29             0396    ; NextPalette changes to the next color palette
+040E29             0397    NextPalette:
+040E29 21 28 0E 04 0398            ld      hl, ColorPalette        ; increment the palette number
+040E2D 34          0399            inc     (hl)
+040E2E 7E          0400            ld      a, (hl)
+040E2F FE 0D       0401            cp      ColorPaletteCount       ; check if it's beyond the last one
+040E31 DA 5D 07 04 0402            jp      c, LoadPalette          ; if not, load it
+040E35 AF          0403            xor     a                       ; if so, wrap around to the first one
+040E36 77          0404            ld      (hl), a
+040E37 C3 5D 07 04 0405            jp      LoadPalette
+040E3B             0406    
+040E3B             0407    
+040E3B             0408    ; CalcPlasmaStarts calculates the initial value for each tile by summing together 8 sine waves of
+040E3B             0409    ; varying frequencies which combine to create the contours of a still image. Each sine wave is
+040E3B             0410    ; defined by a StartAngle, RowFreq and ColFreq which are applied to each X, Y coordinate as:
+040E3B             0411    ; StillFrame(x,y) = sum[n=1..8]: sin(StartAngle[n] + ColFreq[n] * x + RowFreq[n] * y)
+040E3B             0412    
+040E3B             0413    ; The calculation of the input angle for each X and Y coordinate is accomplished by successive
+040E3B             0414    ; additions of the RowFreq and ColFreq values for to the respective RowAngle and ColAngle
+040E3B             0415    ; accumulators.
+040E3B             0416    CalcPlasmaStarts:
+040E3B 21 1B 0E 04 0417            ld      hl, SineStartsY         ; for each of 8 sine waves,
+040E3F 11 B5 0E 04 0418            ld      de, SinePntsY           ; initialize SinePntsY to SineStartsY
+040E43 01 08 00 00 0419            ld      bc, NumSinePnts
+040E47 ED B0       0420            ldir
+040E49 21 00 12 04 0421            ld      hl, PlasmaStarts
+040E4D 0E 1E       0422            ld      c, ScreenHeight         ; for each row...
+040E4F             0423    YLoop:
+040E4F D9          0424            exx
+040E50 01 B5 0E 04 0425            ld      bc, SinePntsY
+040E54 21 13 0E 04 0426            ld      hl, SineAddsY
+040E58 11 AD 0E 04 0427            ld      de, SinePntsX
+040E5C D9          0428            exx
+040E5D 16 08       0429            ld      d, NumSinePnts
+040E5F             0430    SinePntsYLoop:
+040E5F D9          0431            exx                             ; for each sine wave...
+040E60 0A          0432            ld      a, (bc)
+040E61 86          0433            add     a, (hl)                 ; add SineAddsY to SinePntsY
+040E62 02          0434            ld      (bc), a
+040E63 12          0435            ld      (de), a                 ; initialize SinePntsX to SinePntsY
+040E64 03          0436            inc     bc
+040E65 13          0437            inc     de
+040E66 23          0438            inc     hl
+040E67 D9          0439            exx
+040E68 15          0440            dec     d
+040E69 C2 5F 0E 04 0441            jp      nz, SinePntsYLoop       ; ... next sine wave
+040E6D 06 28       0442            ld      b, ScreenWidth          ; for each column...
+040E6F             0443    XLoop:
+040E6F D9          0444            exx
+040E70 11 AD 0E 04 0445            ld      de, SinePntsX
+040E74 21 0B 0E 04 0446            ld      hl, SineAddsX
+040E78 06 08       0447            ld      b, NumSinePnts          ; for each sine wave...
+040E7A             0448    SinePntsXLoop:
+040E7A 1A          0449            ld      a, (de)
+040E7B 86          0450            add     a, (hl)                 ; add SineAddsX to SinePntsX
+040E7C 12          0451            ld      (de), a
+040E7D 13          0452            inc     de
+040E7E 23          0453            inc     hl
+040E7F 10 F9       0454            djnz    SinePntsXLoop           ; ... next sine wave
+040E81             0455    
+040E81 21 00 10 04 0456            ld      hl, SineTable
+040E85 11 AD 0E 04 0457            ld      de, SinePntsX
+040E89 AF          0458            xor     a                       ; initialize to zero
+040E8A 06 08       0459            ld      b, NumSinePnts          ; for each sine wave...
+040E8C             0460    SineAddLoop:
+040E8C 08          0461            ex      af, af'
+040E8D 1A          0462            ld      a, (de)                 ; look up SinePntsX in SineTable
+040E8E 6F          0463            ld      l, a
+040E8F 08          0464            ex      af, af'
+040E90 86          0465            add     a, (hl)                 ; accumulate values from SineTable
+040E91 13          0466            inc     de
+040E92 10 F8       0467            djnz    SineAddLoop             ; ...next sine wave
+040E94 D9          0468            exx
+040E95 77          0469            ld      (hl), a                 ; save accumulated value in PlasmaStarts
+040E96 23          0470            inc     hl
+040E97 10 D6       0471            djnz    XLoop                   ; ... next column
+040E99 0D          0472            dec     c
+040E9A C2 4F 0E 04 0473            jp      nz, YLoop               ; ... next row
+040E9E             0474    UpdateScreen:
+040E9E 21 00 12 04 0475            ld      hl, PlasmaStarts        ; transfer PlasmaStarts to screen buffer
+040EA2 11 B0 16 04 0476            ld      de, ScreenBuffer
+040EA6 01 B0 04 00 0477            ld      bc, ScreenSize
+040EAA ED B0       0478            ldir
+040EAC C9          0479            ret
+040EAD             0480    
+040EAD             0481    SinePntsX:
+040EAD             0482            defs    NumSinePnts
+040EB5             0483    SinePntsY:
+040EB5             0484            defs    NumSinePnts
+040EBD             0485    
+040EBD             0486    ; CalcPlasmaFrame applies distortion and color cycling effects to the original image StillFrame.
+040EBD             0487    ;
+040EBD             0488    ; For each frame, tiles are shifted based on LinearSpeed and two SineSpeeds.  In addition, each
+040EBD             0489    ; row is warped by sine waves defined by two RowWarp parameters. For each row y of frame f, the
+040EBD             0490    ; total offset applied to each tile of StillFrame is calcualted according to this formula:
+040EBD             0491    ; D(f,y) = LinearSpeed * f + (sum [n=0..1]: sin(SineSpeed[n] * f + RowWarp[n] * y)) / 2
+040EBD             0492    CalcPlasmaFrame:
+040EBD 3A 5F 0C 04 0493            ld      a, (StopAnimation)
+040EC1 B7          0494            or      a
+040EC2 C0          0495            ret     nz
+040EC3 01 F9 0E 04 0496            ld      bc, PlasmaCnts
+040EC7 ED 5B 23 0E 0497            ld      de, (SineSpeeds)
        04          
-040EE8 0A          0498            ld      a, (bc)
-040EE9 67          0499            ld      h, a
-040EEA 83          0500            add     a, e
-040EEB 02          0501            ld      (bc), a
-040EEC 03          0502            inc     bc
-040EED 0A          0503            ld      a, (bc)
-040EEE 6F          0504            ld      l, a
-040EEF 82          0505            add     a, d
-040EF0 02          0506            ld      (bc), a
-040EF1 11 00 10 04 0507            ld      de, SineTable
-040EF5 5C          0508            ld      e, h
-040EF6 62          0509            ld      h, d
-040EF7 ED 4B 41 0E 0510            ld      bc, (PlasmaFreqs)
+040ECC 0A          0498            ld      a, (bc)
+040ECD 67          0499            ld      h, a
+040ECE 83          0500            add     a, e
+040ECF 02          0501            ld      (bc), a
+040ED0 03          0502            inc     bc
+040ED1 0A          0503            ld      a, (bc)
+040ED2 6F          0504            ld      l, a
+040ED3 82          0505            add     a, d
+040ED4 02          0506            ld      (bc), a
+040ED5 11 00 10 04 0507            ld      de, SineTable
+040ED9 5C          0508            ld      e, h
+040EDA 62          0509            ld      h, d
+040EDB ED 4B 25 0E 0510            ld      bc, (PlasmaFreqs)
        04          
-040EFC D9          0511            exx
-040EFD 11 17 0F 04 0512            ld      de, CycleCnt
-040F01 1A          0513            ld      a, (de)
-040F02 4F          0514            ld      c, a
-040F03 21 43 0E 04 0515            ld      hl, CycleSpeed
-040F07 86          0516            add     a, (hl)
-040F08 12          0517            ld      (de), a
-040F09 21 00 12 04 0518            ld      hl, PlasmaStarts
-040F0D 11 B0 16 04 0519            ld      de, ScreenBuffer
-040F11 C3 60 1B 04 0520            jp      SpeedCode
-040F15             0521    
-040F15             0522    ; calculate new plasma frame from starting point and current counts
-040F15             0523    PlasmaCnts:
-040F15 00 00       0524            defw    0
-040F17             0525    CycleCnt:
-040F17 00          0526            defb    0
-040F18             0527    
-040F18             0528    ; setup for speedcode:
-040F18             0529    ;       de  = pointer to first sine table entry
-040F18             0530    ;       hl  = pointer to second sine table entry
-040F18             0531    ;       c   = amount to increment first sine pointer between lines
-040F18             0532    ;       b   = amount to increment second sine pointer between lines
-040F18             0533    ;       c'  = current cycle count
-040F18             0534    ;       b'  = offset to add to starting value for current row
-040F18             0535    ;       hl' = pointer to starting plasma values
-040F18             0536    ;       de' = pointer to screen back buffer
-040F18             0537    ;       a   = temporary calculations
-040F18             0538    
-040F18             0539    RowSrc:
-040F18 D9          0540            exx
-040F19 7B          0541            ld      a, e
-040F1A 81          0542            add     a, c
-040F1B 5F          0543            ld      e, a
-040F1C 7D          0544            ld      a, l
-040F1D 80          0545            add     a, b
-040F1E 6F          0546            ld      l, a
-040F1F 1A          0547            ld      a, (de)
-040F20 86          0548            add     a, (hl)
-040F21 1F          0549            rra
-040F22 D9          0550            exx
-040F23 89          0551            adc     a, c
-040F24 47          0552            ld      b, a
-040F25             0553    RowSrcLen:     equ $ - RowSrc
-040F25             0554    
-040F25             0555    ColSrc:
-040F25 7E          0556            ld      a, (hl)
-040F26 80          0557            add     a, b
-040F27 12          0558            ld      (de), a
-040F28 23          0559            inc     hl
-040F29 13          0560            inc     de
-040F2A             0561    ColSrcLen:      equ $ - ColSrc
-040F2A             0562    
-040F2A             0563    ; build unrolled loops for speed
-040F2A             0564    MakeSpeedCode:
-040F2A 11 60 1B 04 0565            ld      de, SpeedCode
-040F2E 3E 1E       0566            ld      a, ScreenHeight
-040F30             0567    RowLoop:
-040F30 21 18 0F 04 0568            ld      hl, RowSrc
-040F34 01 0D 00 00 0569            ld      bc, RowSrcLen
-040F38 ED B0       0570            ldir
-040F3A 08          0571            ex      af, af'
-040F3B 3E 28       0572            ld      a, ScreenWidth
-040F3D             0573    ColLoop:
-040F3D 21 25 0F 04 0574            ld      hl, ColSrc
-040F41 01 05 00 00 0575            ld      bc, ColSrcLen
-040F45 ED B0       0576            ldir
-040F47 3D          0577            dec     a
-040F48 C2 3D 0F 04 0578            jp      nz, ColLoop
-040F4C 08          0579            ex      af, af'
-040F4D 3D          0580            dec     a
-040F4E C2 30 0F 04 0581            jp      nz, RowLoop
-040F52 3A 57 0F 04 0582            ld      a, (RetSrc)
-040F56 12          0583            ld      (de), a
-040F57             0584    RetSrc:
-040F57 C9          0585            ret
-040F58             0586    
-040F58             0587    
-040F58             0588    ; MakeSineTable builds the sine table for a complete period from a precalculated quarter period.
-040F58             0589    ; The first 64 values are copied verbatim from the precomputed values. The next 64 values are
-040F58             0590    ; flipped horizontally by copying them in reverse order. The last 128 values are flipped
-040F58             0591    ; vertically by complementing them. The vertically flipped values are written twice, first in
-040F58             0592    ; forward order, and then in reverse order to flip them horizontally and complete the period.
-040F58             0593    ; The resulting lookup table is 256 bytes long and stored on a 256-byte boundary so that a sine
-040F58             0594    ; value can be looked up by loading a single register with the input value.
-040F58             0595    
-040F58             0596    MakeSineTable:
-040F58 01 89 06 04 0597            ld      bc, SineSrc             ; source values
-040F5C 11 00 10 04 0598            ld      de, SineTable           ; start of 1st quarter
-040F60 21 7F 10 04 0599            ld      hl, SineTable+$7f       ; end of 2nd quarter
-040F64 D9          0600            exx
-040F65 06 40       0601            ld      b, $40                  ; counter
-040F67 11 80 10 04 0602            ld      de, SineTable+$80       ; start of 3rd quarter
-040F6B 21 FF 10 04 0603            ld      hl, SineTable+$ff       ; end of 4th quarter
-040F6F             0604    SineLoop:
-040F6F D9          0605            exx
-040F70 0A          0606            ld      a, (bc)                 ; load source value
-040F71 03          0607            inc     bc
-040F72 12          0608            ld      (de), a                 ; store 1st quarter
-040F73 13          0609            inc     de
-040F74 77          0610            ld      (hl), a                 ; store 2nd quarter
-040F75 2B          0611            dec     hl                      ; in reverse order
-040F76 D9          0612            exx
-040F77 2F          0613            cpl                             ; flip vertically
-040F78 12          0614            ld      (de), a                 ; store 3rd quarter
-040F79 13          0615            inc     de
-040F7A 77          0616            ld      (hl), a                 ; store 4th quarter
-040F7B 2B          0617            dec     hl                      ; in reverse order
-040F7C 10 F1       0618            djnz    SineLoop
-040F7E C9          0619            ret
-040F7F             0620    
-040F7F             0621    NextPage:       equ $ + $ff
-040F7F             0622    SineTable:      equ NextPage & PageMask         ; page align
-040F7F             0623    Stack:          equ SineTable + $200
-040F7F             0624    PlasmaStarts:   equ Stack
-040F7F             0625    ScreenBuffer:   equ PlasmaStarts + ScreenSize
-040F7F             0626    SpeedCode:      equ ScreenBuffer + ScreenSize
+040EE0 D9          0511            exx
+040EE1 11 FB 0E 04 0512            ld      de, CycleCnt
+040EE5 1A          0513            ld      a, (de)
+040EE6 4F          0514            ld      c, a
+040EE7 21 27 0E 04 0515            ld      hl, CycleSpeed
+040EEB 86          0516            add     a, (hl)
+040EEC 12          0517            ld      (de), a
+040EED 21 00 12 04 0518            ld      hl, PlasmaStarts
+040EF1 11 B0 16 04 0519            ld      de, ScreenBuffer
+040EF5 C3 C8 24 04 0520            jp      SpeedCode
+040EF9             0521    
+040EF9             0522    ; calculate new plasma frame from starting point and current counts
+040EF9             0523    PlasmaCnts:
+040EF9 00 00       0524            defw    0
+040EFB             0525    CycleCnt:
+040EFB 00          0526            defb    0
+040EFC             0527    
+040EFC             0528    ; setup for speedcode:
+040EFC             0529    ;       de  = pointer to first sine table entry
+040EFC             0530    ;       hl  = pointer to second sine table entry
+040EFC             0531    ;       c   = amount to increment first sine pointer between lines
+040EFC             0532    ;       b   = amount to increment second sine pointer between lines
+040EFC             0533    ;       c'  = current cycle count
+040EFC             0534    ;       b'  = offset to add to starting value for current row
+040EFC             0535    ;       hl' = pointer to starting plasma values
+040EFC             0536    ;       de' = pointer to screen back buffer
+040EFC             0537    ;       a   = temporary calculations
+040EFC             0538    
+040EFC             0539    RowSrc:
+040EFC D9          0540            exx
+040EFD 7B          0541            ld      a, e
+040EFE 81          0542            add     a, c
+040EFF 5F          0543            ld      e, a
+040F00 7D          0544            ld      a, l
+040F01 80          0545            add     a, b
+040F02 6F          0546            ld      l, a
+040F03 1A          0547            ld      a, (de)
+040F04 86          0548            add     a, (hl)
+040F05 1F          0549            rra
+040F06 D9          0550            exx
+040F07 89          0551            adc     a, c
+040F08 47          0552            ld      b, a
+040F09             0553    RowSrcLen:     equ $ - RowSrc
+040F09             0554    
+040F09             0555    ColSrc:
+040F09 7E          0556            ld      a, (hl)
+040F0A 80          0557            add     a, b
+040F0B 12          0558            ld      (de), a
+040F0C 23          0559            inc     hl
+040F0D 13          0560            inc     de
+040F0E             0561    ColSrcLen:      equ $ - ColSrc
+040F0E             0562    
+040F0E             0563    ; build unrolled loops for speed
+040F0E             0564    MakeSpeedCode:
+040F0E 11 C8 24 04 0565            ld      de, SpeedCode
+040F12 3E 1E       0566            ld      a, ScreenHeight
+040F14             0567    RowLoop:
+040F14 21 FC 0E 04 0568            ld      hl, RowSrc
+040F18 01 0D 00 00 0569            ld      bc, RowSrcLen
+040F1C ED B0       0570            ldir
+040F1E 08          0571            ex      af, af'
+040F1F 3E 28       0572            ld      a, ScreenWidth
+040F21             0573    ColLoop:
+040F21 21 09 0F 04 0574            ld      hl, ColSrc
+040F25 01 05 00 00 0575            ld      bc, ColSrcLen
+040F29 ED B0       0576            ldir
+040F2B 3D          0577            dec     a
+040F2C C2 21 0F 04 0578            jp      nz, ColLoop
+040F30 08          0579            ex      af, af'
+040F31 3D          0580            dec     a
+040F32 C2 14 0F 04 0581            jp      nz, RowLoop
+040F36 3A 3B 0F 04 0582            ld      a, (RetSrc)
+040F3A 12          0583            ld      (de), a
+040F3B             0584    RetSrc:
+040F3B C9          0585            ret
+040F3C             0586    
+040F3C             0587    
+040F3C             0588    ; MakeSineTable builds the sine table for a complete period from a precalculated quarter period.
+040F3C             0589    ; The first 64 values are copied verbatim from the precomputed values. The next 64 values are
+040F3C             0590    ; flipped horizontally by copying them in reverse order. The last 128 values are flipped
+040F3C             0591    ; vertically by complementing them. The vertically flipped values are written twice, first in
+040F3C             0592    ; forward order, and then in reverse order to flip them horizontally and complete the period.
+040F3C             0593    ; The resulting lookup table is 256 bytes long and stored on a 256-byte boundary so that a sine
+040F3C             0594    ; value can be looked up by loading a single register with the input value.
+040F3C             0595    
+040F3C             0596    MakeSineTable:
+040F3C 01 6D 06 04 0597            ld      bc, SineSrc             ; source values
+040F40 11 00 10 04 0598            ld      de, SineTable           ; start of 1st quarter
+040F44 21 7F 10 04 0599            ld      hl, SineTable+$7f       ; end of 2nd quarter
+040F48 D9          0600            exx
+040F49 06 40       0601            ld      b, $40                  ; counter
+040F4B 11 80 10 04 0602            ld      de, SineTable+$80       ; start of 3rd quarter
+040F4F 21 FF 10 04 0603            ld      hl, SineTable+$ff       ; end of 4th quarter
+040F53             0604    SineLoop:
+040F53 D9          0605            exx
+040F54 0A          0606            ld      a, (bc)                 ; load source value
+040F55 03          0607            inc     bc
+040F56 12          0608            ld      (de), a                 ; store 1st quarter
+040F57 13          0609            inc     de
+040F58 77          0610            ld      (hl), a                 ; store 2nd quarter
+040F59 2B          0611            dec     hl                      ; in reverse order
+040F5A D9          0612            exx
+040F5B 2F          0613            cpl                             ; flip vertically
+040F5C 12          0614            ld      (de), a                 ; store 3rd quarter
+040F5D 13          0615            inc     de
+040F5E 77          0616            ld      (hl), a                 ; store 4th quarter
+040F5F 2B          0617            dec     hl                      ; in reverse order
+040F60 10 F1       0618            djnz    SineLoop
+040F62 C9          0619            ret
+040F63             0620    
+040F63             0621    ScreenSizeX2:   equ ScreenSize * 2
+040F63             0622    VduBufferSize:  equ ScreenSizeX2 + 8
+040F63             0623    NextPage:       equ $ + $ff
+040F63             0624    
+040F63             0625    SineTable:      equ NextPage & PageMask         ; page align
+040F63             0626    Stack:          equ SineTable + $200
+040F63             0627    PlasmaStarts:   equ Stack
+040F63             0628    ScreenBuffer:   equ PlasmaStarts + ScreenSize
+040F63             0629    VduBuffer:      equ ScreenBuffer + ScreenSize
+040F63             0630    SpeedCode:      equ VduBuffer + VduBufferSize

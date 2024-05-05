@@ -99,18 +99,24 @@ WaitKeyLoop:
 
 ; Send all the tiles in the screen buffer
 SendScreenBuffer:
-    ld hl, ScreenBuffer         ; initialize pointers and counter
     ld de, VduBuffer
-    ld bc, ScreenSize
-    ld a, VduVsyncBufferSwap    ; add prefix commands to vdu buffer
+    ld a, VduCommand            ; add prefix commands to vdu buffer
+    ld (de), a
+    inc de
+    ld a, VduSystemCommand
+    ld (de), a
+    inc de
+    ld a, VduVsyncBufferSwap
     ld (de), a
     inc de
     ld a, VduCursorHome
     ld (de), a
     inc de
+    ld hl, ScreenBuffer         ; initialize pointers and counter
+    ld bc, ScreenSize-1
     call EscapeBuffer           ; copy the screen buffer, escaped as needed
     ex de, hl                   ; calculate the length of the escaped buffer
-    ld hl, VduBuffer
+    ld de, VduBuffer
     and a
     sbc hl, de
     push hl
@@ -123,7 +129,7 @@ SendScreenBuffer:
 
 DrawScreen:
     call SendScreenBuffer
-    ;call CallBuffer
+    call CallBuffer
     ret
 
 EnableInterrupt:

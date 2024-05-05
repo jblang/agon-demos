@@ -89,7 +89,7 @@ MakeColorRampDesc:              ; load colors into lookup in descending order
 ShowGradientBitmaps:
     xor a
 ShowGradientBitmapsLoop:
-    call SendChar
+    call EscapeChar
     inc a
     jp nz, ShowGradientBitmapsLoop
     ret

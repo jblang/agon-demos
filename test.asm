@@ -135,4 +135,13 @@ GradientTestLoop:
     call NewLine
     ret
 
+CountControlTestMessage:
+    defb "Control character counting test (33 out of 256):", CR, LF, CR, LF, EOS
+
+CountControlTest:
+    ret
+
+ColorPalette:
+        defb    0
+
 ScreenBuffer:   equ $ + ScreenSize

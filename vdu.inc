@@ -92,7 +92,7 @@ VduScrollProtection: equ %00000001
 
 ; System commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/System-Commands.md
-VduSystem: equ 0
+VduSystemCommand: equ 0
 VduResetChars: equ $91
 VduMapCharToBitmap: equ $92
 VduVsyncBufferSwap: equ $C3
@@ -114,13 +114,13 @@ VduContextResetBitmapChars: equ 6
 
 ; Buffer commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Buffered-Commands-API.md
-VduBuffer: equ $A0
+VduBufferCommand: equ $A0
 VduBufferWriteBlock: equ 0
 VduBufferCall: equ 1
 VduBufferClear: equ 2
 
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Bitmaps-API.md
-VduBitmap: equ 27
+VduBitmapCommand: equ 27
 VduBitmapSelect: equ 0
 VduBitmapLoad: equ 1
 VduBitmapSolidColor: equ 2
@@ -301,7 +301,7 @@ DisableScrollProtection:
 WaitVSync:
     push af
     SendByte VduCommand
-    SendByte VduSystem
+    SendByte VduSystemCommand
     SendByte VduVsyncBufferSwap
     pop af
     ret
@@ -368,11 +368,25 @@ MakeRGBA2222:
 ClearBuffer:
     push af
     SendByte VduCommand
-    SendByte VduSystem
-    SendByte VduBuffer
+    SendByte VduSystemCommand
+    SendByte VduBufferCommand
     SendByte e                  ; buffer id
     SendByte d
     SendByte VduBufferClear
+    pop af
+    ret
+
+; Call a buffer
+; Params:
+;   DE = buffer id
+CallBuffer:
+    push af
+    SendByte VduCommand
+    SendByte VduSystemCommand
+    SendByte VduBufferCommand
+    SendByte e                  ; buffer id
+    SendByte d
+    SendByte VduBufferCall
     pop af
     ret
 
@@ -386,8 +400,8 @@ SendBufferBlock:
     push hl
     push bc
     SendByte VduCommand
-    SendByte VduSystem
-    SendByte VduBuffer
+    SendByte VduSystemCommand
+    SendByte VduBufferCommand
     SendByte e                  ; buffer id
     SendByte d
     SendByte VduBufferWriteBlock
@@ -411,7 +425,7 @@ SendBufferLoop:
 SelectBitmapBuffer:
     push af
     SendByte VduCommand
-    SendByte VduBitmap
+    SendByte VduBitmapCommand
     SendByte VduBitmapSelectBuffer
     SendByte e                  ; buffer id
     SendByte d
@@ -426,7 +440,7 @@ SelectBitmapBuffer:
 CreateBitmapFromBuffer:
     push af
     SendByte VduCommand
-    SendByte VduBitmap
+    SendByte VduBitmapCommand
     SendByte VduBitmapCreateBuffer
     SendByte c                  ; width
     SendByte b
@@ -442,7 +456,7 @@ CreateBitmapFromBuffer:
 MapCharToBitmap: 
     push af
     SendByte VduCommand
-    SendByte VduSystem
+    SendByte VduSystemCommand
     SendByte VduMapCharToBitmap
     SendByte c                  ; character number
     SendByte e                  ; bitmap id
@@ -466,27 +480,48 @@ ResetBitmapCharLoop:
     ; VDP 2.8.0 and later
     ;push af
     ;SendByte VduCommand
-    ;SendByte VduSystem
+    ;SendByte VduSystemCommand
     ;SendByte VduContextManagement
     ;SendByte VduContextReset
     ;SendByte VduContextResetBitmapChars
     ;SendByte $ff
     ;pop af
 
-
-EscapeChar:
+; copy the characters in one buffer to another, escaping as needed
+; Params:
+;   HL = source buffer address
+;   DE = destination buffer address
+;   BC = buffer length
+EscapeBuffer:
     push af
-    SendByte VduEscapeChar      ; if so, send escape command first
+EscapeBufferLoop:
+    ld a, (hl)                  ; check if current chracter needs escape
+    cp ' '
+    jp c, EscapeBufferYes
+    cp 127
+    jp z, EscapeBufferNo
+EscapeBufferYes:                ; yes, copy the escape character first
+    ld a, VduEscapeChar
+    ld (de), a
+    inc de
+EscapeBufferNo:                 ; no, just copy the character
+    ldi
+    jp pe, EscapeBufferLoop
     pop af
     ret
 
 ; send a character, escaped if necessary
 ; A = char to send
-SendChar:
-    cp ' '                      ; check if it's a control char
-    call c, EscapeChar
+EscapeChar:
+    cp ' '                      ; check if A contains a control char
+    jp c, EscapeCharYes
     cp 127
-    call z, EscapeChar
+    jp nz, EscapeCharNo
+EscapeCharYes:                  ; if so, send escape char first
+    push af
+    SendByte VduEscapeChar
+    pop af
+EscapeCharNo:                   ; if not, just send char
     SendByte a
     ret
 

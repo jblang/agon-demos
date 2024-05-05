@@ -99,19 +99,31 @@ WaitKeyLoop:
 
 ; Send all the tiles in the screen buffer
 SendScreenBuffer:
-    SendByte VduCursorHome
-    ld hl, ScreenBuffer
-    ld bc, ScreenSize-1
-SendScreenBufferLoop:
-    ld a, (hl)
-    call SendChar
-    inc hl
-    dec bc
-    ld a, b
-    or c
-    jp nz, SendScreenBufferLoop
+    ld hl, ScreenBuffer         ; initialize pointers and counter
+    ld de, VduBuffer
+    ld bc, ScreenSize
+    ld a, VduVsyncBufferSwap    ; add prefix commands to vdu buffer
+    ld (de), a
+    inc de
+    ld a, VduCursorHome
+    ld (de), a
+    inc de
+    call EscapeBuffer           ; copy the screen buffer, escaped as needed
+    ex de, hl                   ; calculate the length of the escaped buffer
+    ld hl, VduBuffer
+    and a
+    sbc hl, de
+    push hl
+    pop bc
+    ld hl, VduBuffer            ; Send the buffer to the VDU
+    ld de, (BitmapCounter)
+    call SendBufferBlock
     ret
 
+DrawScreen:
+    call SendScreenBuffer
+    ;call CallBuffer
+    ret
 
 EnableInterrupt:
     ret                     ; no interrupt needed on Agon

@@ -106,7 +106,7 @@ C64PaletteRGBA2222:
     .db $c6             ; brown
     .db $d7             ; light red
     .db $d5             ; dark grey
-    .db $d5             ; grey
+    .db $ea             ; grey
     .db $ce             ; light green
     .db $f4             ; light blue
     .db $ea             ; light grey

@@ -78,8 +78,7 @@ MainLoop:                               ; repetitive tasks
         call    z, NextEffect
 NoEffectCycle:
         call    CalcPlasmaFrame
-        call    WaitVSync
-        call    SendScreenBuffer
+        call    DrawScreen
         call    GetKey
         JumpIf  'q', Exit               ; must be handled from main
         call    Dispatch
@@ -619,9 +618,13 @@ SineLoop:
         djnz    SineLoop
         ret
 
+ScreenSizeX2:   equ ScreenSize * 2
+VduBufferSize:  equ ScreenSizeX2 + 8
 NextPage:       equ $ + $ff
+
 SineTable:      equ NextPage & PageMask         ; page align
 Stack:          equ SineTable + $200
 PlasmaStarts:   equ Stack
 ScreenBuffer:   equ PlasmaStarts + ScreenSize
-SpeedCode:      equ ScreenBuffer + ScreenSize
+VduBuffer:      equ ScreenBuffer + ScreenSize
+SpeedCode:      equ VduBuffer + VduBufferSize

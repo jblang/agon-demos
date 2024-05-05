@@ -499,7 +499,7 @@ EscapeBufferLoop:
     cp ' '
     jp c, EscapeBufferYes
     cp 127
-    jp z, EscapeBufferNo
+    jp nz, EscapeBufferNo
 EscapeBufferYes:                ; yes, copy the escape character first
     ld a, VduEscapeChar
     ld (de), a

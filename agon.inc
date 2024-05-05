@@ -117,6 +117,7 @@ SendScreenBuffer:
     pop bc
     ld hl, VduBuffer            ; Send the buffer to the VDU
     ld de, (BitmapCounter)
+    call ClearBuffer
     call SendBufferBlock
     ret
 

@@ -325,6 +325,12 @@ RandomParameters:
         call    RandomSeries
         call    RandomNumber            ; randomly select palette
         ld      a, l
+RandomParametersPaletteTest:
+        cp      ColorPaletteCount
+        jp      c, RandomParametersPaletteOK
+        sub     ColorPaletteCount
+        jp      RandomParametersPaletteTest
+RandomParametersPaletteOK:    
         ld      (ColorPalette), a
         call    CalcPlasmaStarts
         jp      LoadPalette
@@ -369,8 +375,7 @@ InitEffect:
         ld      (DurationCnt), a
         
         call    CalcPlasmaStarts
-        call    LoadPalette
-        ret
+        jp      LoadPalette
 
 ; =============================================================================
 ; plasma calculations

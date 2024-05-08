@@ -110,9 +110,9 @@ RandomNumber:
         ret
 
 Seed1:
-        defw    0
+        DefPointer    0
 Seed2:
-        defw    0
+        DefPointer    0
 
 ; RandomSeries generates series of random numbers
 ; b = number of random numbers to generate

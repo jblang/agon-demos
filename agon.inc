@@ -72,7 +72,7 @@ InitGraphics:
     call TextCursorHide
     ld de, 0
     call SetGradient
-    ;call EnableScrollProtection
+    call EnableScrollProtection
     ret
 
     
@@ -113,7 +113,7 @@ SendScreenBuffer:
     ld (de), a
     inc de
     ld hl, ScreenBuffer         ; initialize pointers and counter
-    ld bc, ScreenSize-1
+    ld bc, ScreenSize
     call EscapeBuffer           ; copy the screen buffer, escaped as needed
     ex de, hl                   ; calculate the length of the escaped buffer
     ld de, VduBuffer

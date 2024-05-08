@@ -88,6 +88,7 @@ VduCursorFlash: equ 3
 ; Cursor movement commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/VDU-Commands.md#vdu-23-16-setting-mask-define-cursor-movement-behaviour
 VduCursorMovement: equ 16
+VduCursorWrap: equ %00010000
 VduScrollProtection: equ %00000001
 
 ; System commands
@@ -258,9 +259,8 @@ SetCursorMovementBit:
     push af
     SendByte VduCommand
     SendByte VduCursorMovement
+    SendByte c
     ld a, c
-    cpl
-    SendByte a
     cpl
     SendByte a
     pop af
@@ -273,10 +273,9 @@ ClearCursorMovementBit:
     push af
     SendByte VduCommand
     SendByte VduCursorMovement
+    SendByte 0
     ld a, c
     cpl
-    SendByte a
-    xor a
     SendByte a
     pop af
     ret

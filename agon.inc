@@ -97,21 +97,10 @@ WaitKeyLoop:
     ret
 
 
-; Send all the tiles in the screen buffer
-SendScreenBuffer:
+DrawScreen:                     ; place label in front of the implementation you want to use
+; Escape all control characters in the screen buffer, then send it to the VDU and execute it
+DrawScreenEscaped:
     ld de, VduBuffer
-    ld a, VduCommand            ; add prefix commands to vdu buffer
-    ld (de), a
-    inc de
-    ld a, VduSystemCommand
-    ld (de), a
-    inc de
-    ld a, VduVsyncBufferSwap
-    ld (de), a
-    inc de
-    ld a, VduCursorHome
-    ld (de), a
-    inc de
     ld hl, ScreenBuffer         ; initialize pointers and counter
     ld bc, ScreenSize
     call EscapeBuffer           ; copy the screen buffer, escaped as needed
@@ -125,11 +114,21 @@ SendScreenBuffer:
     ld de, (BitmapCounter)
     call ClearBuffer
     call SendBufferBlock
+    call WaitVSync
+    call CursorHome
+    call CallBuffer
     ret
 
-DrawScreen:
-    call SendScreenBuffer
-    call CallBuffer
+; Send screen buffer to the VDU and then draw it using the PrintBuffer command, new in 2.9.0
+DrawScreenLiteral:
+    ld hl, ScreenBuffer
+    ld bc, ScreenSize
+    ld de, (BitmapCounter)
+    call ClearBuffer
+    call SendBufferBlock
+    call WaitVSync
+    call CursorHome
+    call PrintBuffer
     ret
 
 EnableInterrupt:

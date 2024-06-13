@@ -96,6 +96,7 @@ VduScrollProtection: equ %00000001
 VduSystemCommand: equ 0
 VduResetChars: equ $91
 VduMapCharToBitmap: equ $92
+VduPrintBufferLiteral: equ $9B
 VduVsyncBufferSwap: equ $C3
 
 ; Context management commands
@@ -105,12 +106,12 @@ VduContextSelectStack: equ 0
 VduContextDeleteStack: equ 1
 VduContextReset: equ 2
 
-;VduContextResetGraphicsPainting: equ 0
-;VduContextResetGraphicsPositioning: equ 1
-;VduContextResetTextPainting: equ 2
-;VduContextResetTextCursorVisuals: equ 3
-;VduContextResetTextCursorBehavior: equ 4
-;VduContextResetFonts: equ 5
+VduContextResetGraphicsPainting: equ 0
+VduContextResetGraphicsPositioning: equ 1
+VduContextResetTextPainting: equ 2
+VduContextResetTextCursorVisuals: equ 3
+VduContextResetTextCursorBehavior: equ 4
+VduContextResetFonts: equ 5
 VduContextResetBitmapChars: equ 6
 
 ; Buffer commands
@@ -195,6 +196,12 @@ VdpMode:
 ClearScreen:
     push af
     SendByte VduClearScreen
+    pop af
+    ret
+
+CursorHome:
+    push af
+    SendByte VduCursorHome
     pop af
     ret
 
@@ -298,6 +305,7 @@ DisableScrollProtection:
 
 ; Wait for vsync (and swap buffers if using a buffered video mode)
 WaitVSync:
+VsyncBufferSwap:
     push af
     SendByte VduCommand
     SendByte VduSystemCommand
@@ -389,6 +397,19 @@ CallBuffer:
     pop af
     ret
 
+; Print buffer contents to screen literally without processing commands
+; Params:
+;   DE = buffer id
+PrintBuffer:
+    push af
+    SendByte VduCommand
+    SendByte VduSystemCommand
+    SendByte VduPrintBufferLiteral
+    SendByte e
+    SendByte d
+    pop af
+    ret
+
 ; Send a block of data to a buffer
 ; Params:
 ;   DE = buffer id
@@ -398,6 +419,7 @@ SendBufferBlock:
     push af
     push hl
     push bc
+    push de
     SendByte VduCommand
     SendByte VduSystemCommand
     SendByte VduBufferCommand
@@ -406,13 +428,8 @@ SendBufferBlock:
     SendByte VduBufferWriteBlock
     SendByte c                  ; length
     SendByte b
-SendBufferLoop:
-    SendByte (hl)
-    inc hl
-    dec bc
-    ld a, b
-    or c
-    jp nz, SendBufferLoop
+    rst.lil $18
+    pop de
     pop bc
     pop hl
     pop af

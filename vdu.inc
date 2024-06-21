@@ -19,23 +19,28 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
+; VDP MOS calls
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/MOS-API.md#rst-10h-output-a-single-character-to-the-vdp
+VduSendByte: equ $10
+VduSendBytes: equ $18
+
 ; Convenience macros
     macro SendByte value
         ld a, value
-        rst.lil $10
+        rst.lis VduSendByte
     endmacro
 
-    macro SendBytes addr, length
+    macro SendBuff addr, length
         ld hl, addr
         ld bc, length
-        rst.lil $18
+        rst.lis VduSendBytes
     endmacro
 
     macro SendString addr, term
         ld hl, addr
         ld bc, 0
         ld a, term
-        rst.lil $18
+        rst.lis VduSendBytes
     endmacro
 
 ; VDU commands
@@ -77,6 +82,43 @@ VduCursorHome: equ 30
 VduCursorMove: equ 31
 VduBackspace: equ 127
 
+; Screen Modes
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Screen-Modes.md
+VduMode640x480x16: equ 0
+VduMode640x480x4: equ 1
+VduMode640x480x2: equ 2
+VduMode640x240x64: equ 3
+VduMode640x240x16: equ 4
+VduMode640x240x4: equ 5
+VduMode640x240x2: equ 6
+VduModeTeletext: equ 7
+VduMode320x240x64: equ 8
+VduMode320x240x16: equ 9
+VduMode320x240x4: equ 10
+VduMode320x240x2: equ 11
+VduMode320x200x64: equ 12
+VduMode320x200x16: equ 13
+VduMode320x200x4: equ 14
+VduMode320x200x2: equ 15
+VduMode800x600x4: equ 16
+VduMode800x600x2: equ 17
+VduMode1024x768x2: equ 18
+
+VduModeDoubleBuffered: equ 128
+VduMode640x480x4DB: equ VduMode640x480x4 + VduModeDoubleBuffered
+VduMode640x480x2DB: equ VduMode640x480x2 + VduModeDoubleBuffered
+VduMode640x240x16DB: equ VduMode640x240x16 + VduModeDoubleBuffered
+VduMode640x240x4DB: equ VduMode640x240x4 + VduModeDoubleBuffered
+VduMode640x240x2DB: equ VduMode640x240x2 + VduModeDoubleBuffered
+VduMode320x240x64DB: equ VduMode320x240x64 + VduModeDoubleBuffered
+VduMode320x240x16DB: equ VduMode320x240x16 + VduModeDoubleBuffered
+VduMode320x240x4DB: equ VduMode320x240x4 + VduModeDoubleBuffered
+VduMode320x240x2DB: equ VduMode320x240x2 + VduModeDoubleBuffered
+VduMode320x200x64DB: equ VduMode320x200x64 + VduModeDoubleBuffered
+VduMode320x200x16DB: equ VduMode320x200x16 + VduModeDoubleBuffered
+VduMode320x200x4DB: equ VduMode320x200x4 + VduModeDoubleBuffered
+VduMode320x200x2DB: equ VduMode320x200x2 + VduModeDoubleBuffered
+
 ; Cursor display Commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/VDU-Commands.md#vdu-23-1-n-cursor-control
 VduCursorDisplay: equ 1
@@ -106,13 +148,15 @@ VduContextSelectStack: equ 0
 VduContextDeleteStack: equ 1
 VduContextReset: equ 2
 
-VduContextResetGraphicsPainting: equ 0
-VduContextResetGraphicsPositioning: equ 1
-VduContextResetTextPainting: equ 2
-VduContextResetTextCursorVisuals: equ 3
-VduContextResetTextCursorBehavior: equ 4
-VduContextResetFonts: equ 5
-VduContextResetBitmapChars: equ 6
+VduContextResetGraphicsPainting: equ $01
+VduContextResetGraphicsPositioning: equ $02
+VduContextResetTextPainting: equ $04
+VduContextResetTextCursorVisuals: equ $08
+VduContextResetTextCursorBehavior: equ $10
+VduContextResetFonts: equ $20
+VduContextResetBitmapChars: equ $40
+VduContextResetReserved: equ $80
+VduContextResetAll: equ $ff
 
 ; Buffer commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Buffered-Commands-API.md
@@ -120,7 +164,48 @@ VduBufferCommand: equ $A0
 VduBufferWriteBlock: equ 0
 VduBufferCall: equ 1
 VduBufferClear: equ 2
+VduBufferCopyBlocks: equ 13
+VduBufferBitmapExpand: equ 72
 
+VduBufferBitmapExpandBppMask: equ 3
+VduBufferBitmapExpandAlignBit: equ 3
+VduBufferBitmapExpandMappingBufferBit: equ 4
+
+VduBufferSpecial: equ $ffff
+
+; Buffer Conditional Commands
+VduBufferConditionalJump: equ 8
+
+VduBufferConditionExists: equ 0
+VduBufferConditionNotExists: equ 1
+VduBufferConditionEqual: equ 2
+VduBufferConditionNotEqual: equ 3
+VduBufferConditionLessThan: equ 4
+VduBufferConditionGreaterThan: equ 5
+VduBufferConditionLessOrEqual: equ 6
+VduBufferConditionGreaterOrEqual: equ 7
+VduBufferConditionAnd: equ 8
+VduBufferConditionOr: equ 9
+
+; Buffer Adjust Commands
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Buffered-Commands-API.md#command-5-adjust-buffer-contents
+VduBufferAdjust: equ 5
+
+VduBufferAdjustNot: equ 0
+VduBufferAdjustNegate: equ 1
+VduBufferAdjustSet: equ 2
+VduBufferAdjustAdd: equ 3
+VduBufferAdjustAddCarry: equ 4
+VduBufferAdjustAnd: equ 5
+VduBufferAdjustOr: equ 6
+VduBufferAdjustXor: equ 7
+
+VduBufferFlagAdvancedOffsets: equ $10
+VduBufferFlagFetchOperand: equ $20
+VduBufferFlagMultipleTarget: equ $40
+VduBufferFlagMultipleOperand: equ $80
+
+; Bitmap Commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Bitmaps-API.md
 VduBitmapCommand: equ 27
 VduBitmapSelect: equ 0
@@ -143,7 +228,7 @@ EOS:    equ     0       ; end of string (null terminated)
 ; Params:
 ;   A = character to output
 CharOut:
-    rst.lil $10
+    rst.lil VduSendByte
     ret
 
 ; output a string terminated by EOS
@@ -164,7 +249,7 @@ StringOut:
 ;   HL = address of bytes
 ;   BC = byte count
 BytesOut:
-    rst.lil $18
+    rst.lis VduSendBytes
     ret
 
 ; Output a space
@@ -190,6 +275,29 @@ VdpMode:
     SendByte VduSetMode
     SendByte c
     pop af
+    ret
+
+; Reset the VDP context
+; Params:
+;   C = flags
+ResetContext:
+    push af
+    SendByte VduCommand
+    SendByte VduSystemCommand
+    SendByte VduContextManagement
+    SendByte VduContextReset
+    SendByte c
+    pop af
+    ret
+
+VdpReset:
+    call ResetBitmapChars
+    ld de, VduBufferSpecial         ; clear all buffers
+    call ClearBuffer
+    ld c, VduContextResetAll
+    call ResetContext
+    ld c, VduMode640x480x16         ; switch to mode 0
+    call VdpMode
     ret
 
 ; Clear the screen
@@ -237,7 +345,7 @@ TextColor:
     SendByte VduTextColor       ; paper (background)
     ld a, b
     add VduBackgroundColor
-    rst.lil $10
+    rst.lis VduSendByte
     pop af
     ret
 
@@ -410,6 +518,10 @@ PrintBuffer:
     pop af
     ret
 
+ClearAndSendBuffer:
+    call ClearBuffer
+    ; fallthrough
+
 ; Send a block of data to a buffer
 ; Params:
 ;   DE = buffer id
@@ -428,7 +540,7 @@ SendBufferBlock:
     SendByte VduBufferWriteBlock
     SendByte c                  ; length
     SendByte b
-    rst.lil $18
+    rst.lis VduSendBytes
     pop de
     pop bc
     pop hl
@@ -493,15 +605,6 @@ ResetBitmapCharLoop:
     pop de
     pop bc
     ret
-    ; VDP 2.8.0 and later
-    ;push af
-    ;SendByte VduCommand
-    ;SendByte VduSystemCommand
-    ;SendByte VduContextManagement
-    ;SendByte VduContextReset
-    ;SendByte VduContextResetBitmapChars
-    ;SendByte $ff
-    ;pop af
 
 ; copy the characters in one buffer to another, escaping as needed
 ; Params:
@@ -559,7 +662,7 @@ LoadTableLoop:
     pop de
     dec e
     jp nz, LoadTable
-    ret  
+    ret
 
 ; call table prefix function in HL, unless it is 0
 ; HL = function pointer

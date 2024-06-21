@@ -54,7 +54,7 @@ Entry:
 
 
 Exit:
-    call ResetBitmapChars
+    call VdpReset
     pop iy                                  ; pop all registers back from the stack
     pop ix
     pop de

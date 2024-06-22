@@ -19,19 +19,59 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
-; uncomment or comment to enable or disable features
+; Clear a buffer
+; Params:
+;   DE = buffer id
+ClearBuffer:
+    push af
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_BufferCommand
+    SendByte e                  ; buffer id
+    SendByte d
+    SendByte VDU_BufferClear
+    pop af
+    ret
 
-    include "vdu/constants.inc"     ; constants only; no code
-    include "vdu/macros.inc"        ; convenient macros
+; Call a buffer
+; Params:
+;   DE = buffer id
+CallBuffer:
+    push af
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_BufferCommand
+    SendByte e                  ; buffer id
+    SendByte d
+    SendByte VDU_BufferCall
+    pop af
+    ret
 
-    include "vdu/text.inc"
-    include "vdu/graphics.inc"
-    include "vdu/system.inc"
+ClearAndSendBuffer:
+    call ClearBuffer
+    ; fallthrough
 
-    include "vdu/audio.inc"
-    include "vdu/bitmap.inc"
-    include "vdu/buffer.inc"
-    include "vdu/context.inc"
-    include "vdu/font.inc"
-
-    include "vdu/utility.inc"
+; Send a block of data to a buffer
+; Params:
+;   DE = buffer id
+;   BC = buffer length
+;   HL = buffer data
+SendBufferBlock:
+    push af
+    push hl
+    push bc
+    push de
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_BufferCommand
+    SendByte e                  ; buffer id
+    SendByte d
+    SendByte VDU_BufferWriteBlock
+    SendByte c                  ; length
+    SendByte b
+    rst.lis VDU_SendBytes
+    pop de
+    pop bc
+    pop hl
+    pop af
+    ret

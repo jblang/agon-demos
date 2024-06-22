@@ -19,19 +19,37 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
-; uncomment or comment to enable or disable features
+; Bitmaps API
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Bitmaps-API.md
 
-    include "vdu/constants.inc"     ; constants only; no code
-    include "vdu/macros.inc"        ; convenient macros
 
-    include "vdu/text.inc"
-    include "vdu/graphics.inc"
-    include "vdu/system.inc"
+; Select a bitmap using buffer ID
+; Params:
+;   DE = buffer id
+SelectBitmapBuffer:
+    push af
+    SendByte VDU_Command
+    SendByte VDU_BitmapCommand
+    SendByte VDU_BitmapSelectBuffer
+    SendByte e                  ; buffer id
+    SendByte d
+    pop af
+    ret
 
-    include "vdu/audio.inc"
-    include "vdu/bitmap.inc"
-    include "vdu/buffer.inc"
-    include "vdu/context.inc"
-    include "vdu/font.inc"
-
-    include "vdu/utility.inc"
+; Create selected bitmap from buffer
+; Params:
+;   BC = width
+;   DE = height
+;   L = format
+CreateBitmapFromBuffer:
+    push af
+    SendByte VDU_Command
+    SendByte VDU_BitmapCommand
+    SendByte VDU_BitmapCreateBuffer
+    SendByte c                  ; width
+    SendByte b
+    SendByte e                  ; height
+    SendByte d
+    SendByte l                  ; format
+    pop af
+    ret

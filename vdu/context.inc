@@ -19,19 +19,15 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
-; uncomment or comment to enable or disable features
-
-    include "vdu/constants.inc"     ; constants only; no code
-    include "vdu/macros.inc"        ; convenient macros
-
-    include "vdu/text.inc"
-    include "vdu/graphics.inc"
-    include "vdu/system.inc"
-
-    include "vdu/audio.inc"
-    include "vdu/bitmap.inc"
-    include "vdu/buffer.inc"
-    include "vdu/context.inc"
-    include "vdu/font.inc"
-
-    include "vdu/utility.inc"
+; Reset the VDP context
+; Params:
+;   C = flags
+ResetContext:
+    push af
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_ContextManagement
+    SendByte VDU_ContextReset
+    SendByte c
+    pop af
+    ret

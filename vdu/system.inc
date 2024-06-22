@@ -19,19 +19,52 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
-; uncomment or comment to enable or disable features
+; System Commands
+; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/System-Commands.md
 
-    include "vdu/constants.inc"     ; constants only; no code
-    include "vdu/macros.inc"        ; convenient macros
+; Set the VDP mode
+; Params:
+;   C = mode number
+VdpMode:
+    push af
+    SendByte VDU_SetMode
+    SendByte c
+    pop af
+    ret
 
-    include "vdu/text.inc"
-    include "vdu/graphics.inc"
-    include "vdu/system.inc"
+; Wait for vsync (and swap buffers if using a buffered video mode)
+WaitVSync:
+VsyncBufferSwap:
+    push af
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_VsyncBufferSwap
+    pop af
+    ret
 
-    include "vdu/audio.inc"
-    include "vdu/bitmap.inc"
-    include "vdu/buffer.inc"
-    include "vdu/context.inc"
-    include "vdu/font.inc"
+; Print buffer contents to screen literally without processing commands
+; Params:
+;   DE = buffer id
+PrintBuffer:
+    push af
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_PrintBufferLiteral
+    SendByte e
+    SendByte d
+    pop af
+    ret
 
-    include "vdu/utility.inc"
+; map character number to bitmap using buffer id
+; C = char
+; DE = bitmap id
+MapCharToBitmap: 
+    push af
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_MapCharToBitmap
+    SendByte c                  ; character number
+    SendByte e                  ; bitmap id
+    SendByte d
+    pop af
+    ret

@@ -21,224 +21,224 @@
 
 ; VDP MOS calls
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/MOS-API.md#rst-10h-output-a-single-character-to-the-vdp
-VduSendByte: equ $10
-VduSendBytes: equ $18
+VDU_SendByte: equ $10
+VDU_SendBytes: equ $18
 
 ; Convenience macros
     macro SendByte value
         ld a, value
-        rst.lis VduSendByte
+        rst.lis VDU_SendByte
     endmacro
 
     macro SendBuff addr, length
         ld hl, addr
         ld bc, length
-        rst.lis VduSendBytes
+        rst.lis VDU_SendBytes
     endmacro
 
     macro SendString addr, term
         ld hl, addr
         ld bc, 0
         ld a, term
-        rst.lis VduSendBytes
+        rst.lis VDU_SendBytes
     endmacro
 
 ; VDU commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/VDU-Commands.md
-VduNull: equ 0
-VduPrinterChar: equ 1
-VduPrinterOn: equ 2
-VduPrinterOff: equ 3
-VduTextCursor: equ 4
-VduGraphicsCursor: equ 5
-VduEnableScreen: equ 8
-VduBeep: equ 7
-VduCursorLeft: equ 8
-VduCursorRight: equ 9
-VduCursorDown: equ 10
-VduCursorUp: equ 11
-VduClearScreen: equ 12
-VduCarriageReturn: equ 13
-VduPageModeOn: equ 14
-VduPageModeOff: equ 15
-VduClearGraphics: equ 16
-VduTextColor: equ 17
-VduBackgroundColor: equ 128
-VduGraphicsColor: equ 18
-VduSetPalette: equ 19
-VduSetPaletteRGB: equ $ff
-VduResetPalette: equ 20
-VduDisableScreen: equ 21
-VduSetMode: equ 22
-VduCustomChar: equ 23
-VduCommand: equ 23
-VduGraphicsViewport: equ 24
-VduPlot: equ 25
-VduResetViewports: equ 26
-VduEscapeChar: equ 27
-VduTextViewport: equ 28
-VduGraphicsOrigin: equ 29
-VduCursorHome: equ 30
-VduCursorMove: equ 31
-VduBackspace: equ 127
+VDU_Null: equ 0
+VDU_PrinterChar: equ 1
+VDU_PrinterOn: equ 2
+VDU_PrinterOff: equ 3
+VDU_TextCursor: equ 4
+VDU_GraphicsCursor: equ 5
+VDU_EnableScreen: equ 8
+VDU_Beep: equ 7
+VDU_CursorLeft: equ 8
+VDU_CursorRight: equ 9
+VDU_CursorDown: equ 10
+VDU_CursorUp: equ 11
+VDU_ClearScreen: equ 12
+VDU_CarriageReturn: equ 13
+VDU_PageModeOn: equ 14
+VDU_PageModeOff: equ 15
+VDU_ClearGraphics: equ 16
+VDU_TextColor: equ 17
+VDU_BackgroundColor: equ 128
+VDU_GraphicsColor: equ 18
+VDU_SetPalette: equ 19
+VDU_SetPaletteRGB: equ $ff
+VDU_ResetPalette: equ 20
+VDU_DisableScreen: equ 21
+VDU_SetMode: equ 22
+VDU_CustomChar: equ 23
+VDU_Command: equ 23
+VDU_GraphicsViewport: equ 24
+VDU_Plot: equ 25
+VDU_ResetViewports: equ 26
+VDU_EscapeChar: equ 27
+VDU_TextViewport: equ 28
+VDU_GraphicsOrigin: equ 29
+VDU_CursorHome: equ 30
+VDU_CursorMove: equ 31
+VDU_Backspace: equ 127
 
 ; Screen Modes
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Screen-Modes.md
-VduMode640x480x16: equ 0
-VduMode640x480x4: equ 1
-VduMode640x480x2: equ 2
-VduMode640x240x64: equ 3
-VduMode640x240x16: equ 4
-VduMode640x240x4: equ 5
-VduMode640x240x2: equ 6
-VduModeTeletext: equ 7
-VduMode320x240x64: equ 8
-VduMode320x240x16: equ 9
-VduMode320x240x4: equ 10
-VduMode320x240x2: equ 11
-VduMode320x200x64: equ 12
-VduMode320x200x16: equ 13
-VduMode320x200x4: equ 14
-VduMode320x200x2: equ 15
-VduMode800x600x4: equ 16
-VduMode800x600x2: equ 17
-VduMode1024x768x2: equ 18
+VDU_Mode640x480x16: equ 0
+VDU_Mode640x480x4: equ 1
+VDU_Mode640x480x2: equ 2
+VDU_Mode640x240x64: equ 3
+VDU_Mode640x240x16: equ 4
+VDU_Mode640x240x4: equ 5
+VDU_Mode640x240x2: equ 6
+VDU_ModeTeletext: equ 7
+VDU_Mode320x240x64: equ 8
+VDU_Mode320x240x16: equ 9
+VDU_Mode320x240x4: equ 10
+VDU_Mode320x240x2: equ 11
+VDU_Mode320x200x64: equ 12
+VDU_Mode320x200x16: equ 13
+VDU_Mode320x200x4: equ 14
+VDU_Mode320x200x2: equ 15
+VDU_Mode800x600x4: equ 16
+VDU_Mode800x600x2: equ 17
+VDU_Mode1024x768x2: equ 18
 
-VduModeDoubleBuffered: equ 128
-VduMode640x480x4DB: equ VduMode640x480x4 + VduModeDoubleBuffered
-VduMode640x480x2DB: equ VduMode640x480x2 + VduModeDoubleBuffered
-VduMode640x240x16DB: equ VduMode640x240x16 + VduModeDoubleBuffered
-VduMode640x240x4DB: equ VduMode640x240x4 + VduModeDoubleBuffered
-VduMode640x240x2DB: equ VduMode640x240x2 + VduModeDoubleBuffered
-VduMode320x240x64DB: equ VduMode320x240x64 + VduModeDoubleBuffered
-VduMode320x240x16DB: equ VduMode320x240x16 + VduModeDoubleBuffered
-VduMode320x240x4DB: equ VduMode320x240x4 + VduModeDoubleBuffered
-VduMode320x240x2DB: equ VduMode320x240x2 + VduModeDoubleBuffered
-VduMode320x200x64DB: equ VduMode320x200x64 + VduModeDoubleBuffered
-VduMode320x200x16DB: equ VduMode320x200x16 + VduModeDoubleBuffered
-VduMode320x200x4DB: equ VduMode320x200x4 + VduModeDoubleBuffered
-VduMode320x200x2DB: equ VduMode320x200x2 + VduModeDoubleBuffered
+VDU_ModeDoubleBuffered: equ 128
+VDU_Mode640x480x4DB: equ VDU_Mode640x480x4 + VDU_ModeDoubleBuffered
+VDU_Mode640x480x2DB: equ VDU_Mode640x480x2 + VDU_ModeDoubleBuffered
+VDU_Mode640x240x16DB: equ VDU_Mode640x240x16 + VDU_ModeDoubleBuffered
+VDU_Mode640x240x4DB: equ VDU_Mode640x240x4 + VDU_ModeDoubleBuffered
+VDU_Mode640x240x2DB: equ VDU_Mode640x240x2 + VDU_ModeDoubleBuffered
+VDU_Mode320x240x64DB: equ VDU_Mode320x240x64 + VDU_ModeDoubleBuffered
+VDU_Mode320x240x16DB: equ VDU_Mode320x240x16 + VDU_ModeDoubleBuffered
+VDU_Mode320x240x4DB: equ VDU_Mode320x240x4 + VDU_ModeDoubleBuffered
+VDU_Mode320x240x2DB: equ VDU_Mode320x240x2 + VDU_ModeDoubleBuffered
+VDU_Mode320x200x64DB: equ VDU_Mode320x200x64 + VDU_ModeDoubleBuffered
+VDU_Mode320x200x16DB: equ VDU_Mode320x200x16 + VDU_ModeDoubleBuffered
+VDU_Mode320x200x4DB: equ VDU_Mode320x200x4 + VDU_ModeDoubleBuffered
+VDU_Mode320x200x2DB: equ VDU_Mode320x200x2 + VDU_ModeDoubleBuffered
 
 ; Cursor display Commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/VDU-Commands.md#vdu-23-1-n-cursor-control
-VduCursorDisplay: equ 1
-VduCursorHide: equ 0
-VduCursorShow: equ 1
-VduCursorSteady: equ 2
-VduCursorFlash: equ 3
+VDU_CursorDisplay: equ 1
+VDU_CursorHide: equ 0
+VDU_CursorShow: equ 1
+VDU_CursorSteady: equ 2
+VDU_CursorFlash: equ 3
 
 ; Cursor movement commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/VDU-Commands.md#vdu-23-16-setting-mask-define-cursor-movement-behaviour
-VduCursorMovement: equ 16
-VduCursorWrap: equ %00010000
-VduScrollProtection: equ %00000001
+VDU_CursorMovement: equ 16
+VDU_CursorWrap: equ %00010000
+VDU_ScrollProtection: equ %00000001
 
 ; System commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/System-Commands.md
-VduSystemCommand: equ 0
-VduResetChars: equ $91
-VduMapCharToBitmap: equ $92
-VduPrintBufferLiteral: equ $9B
-VduVsyncBufferSwap: equ $C3
+VDU_SystemCommand: equ 0
+VDU_ResetChars: equ $91
+VDU_MapCharToBitmap: equ $92
+VDU_PrintBufferLiteral: equ $9B
+VDU_VsyncBufferSwap: equ $C3
 
 ; Context management commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Context-Management-API.md
-VduContextManagement: equ $C8
-VduContextSelectStack: equ 0
-VduContextDeleteStack: equ 1
-VduContextReset: equ 2
+VDU_ContextManagement: equ $C8
+VDU_ContextSelectStack: equ 0
+VDU_ContextDeleteStack: equ 1
+VDU_ContextReset: equ 2
 
-VduContextResetGraphicsPainting: equ $01
-VduContextResetGraphicsPositioning: equ $02
-VduContextResetTextPainting: equ $04
-VduContextResetTextCursorVisuals: equ $08
-VduContextResetTextCursorBehavior: equ $10
-VduContextResetFonts: equ $20
-VduContextResetBitmapChars: equ $40
-VduContextResetReserved: equ $80
-VduContextResetAll: equ $ff
+VDU_ContextResetGraphicsPainting: equ $01
+VDU_ContextResetGraphicsPositioning: equ $02
+VDU_ContextResetTextPainting: equ $04
+VDU_ContextResetTextCursorVisuals: equ $08
+VDU_ContextResetTextCursorBehavior: equ $10
+VDU_ContextResetFonts: equ $20
+VDU_ContextResetBitmapChars: equ $40
+VDU_ContextResetReserved: equ $80
+VDU_ContextResetAll: equ $ff
 
 ; Buffer commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Buffered-Commands-API.md
-VduBufferCommand: equ $A0
-VduBufferWriteBlock: equ 0
-VduBufferCall: equ 1
-VduBufferClear: equ 2
-VduBufferCopyBlocks: equ 13
-VduBufferBitmapExpand: equ 72
+VDU_BufferCommand: equ $A0
+VDU_BufferWriteBlock: equ 0
+VDU_BufferCall: equ 1
+VDU_BufferClear: equ 2
+VDU_BufferCopyBlocks: equ 13
+VDU_BufferBitmapExpand: equ 72
 
-VduBufferBitmapExpandBppMask: equ 3
-VduBufferBitmapExpandAlignBit: equ 3
-VduBufferBitmapExpandMappingBufferBit: equ 4
+VDU_BufferBitmapExpandBppMask: equ 3
+VDU_BufferBitmapExpandAlignBit: equ 3
+VDU_BufferBitmapExpandMappingBufferBit: equ 4
 
-VduBufferSpecial: equ $ffff
+VDU_BufferSpecial: equ $ffff
 
 ; Buffer Conditional Commands
-VduBufferConditionalJump: equ 8
+VDU_BufferConditionalJump: equ 8
 
-VduBufferConditionExists: equ 0
-VduBufferConditionNotExists: equ 1
-VduBufferConditionEqual: equ 2
-VduBufferConditionNotEqual: equ 3
-VduBufferConditionLessThan: equ 4
-VduBufferConditionGreaterThan: equ 5
-VduBufferConditionLessOrEqual: equ 6
-VduBufferConditionGreaterOrEqual: equ 7
-VduBufferConditionAnd: equ 8
-VduBufferConditionOr: equ 9
+VDU_BufferConditionExists: equ 0
+VDU_BufferConditionNotExists: equ 1
+VDU_BufferConditionEqual: equ 2
+VDU_BufferConditionNotEqual: equ 3
+VDU_BufferConditionLessThan: equ 4
+VDU_BufferConditionGreaterThan: equ 5
+VDU_BufferConditionLessOrEqual: equ 6
+VDU_BufferConditionGreaterOrEqual: equ 7
+VDU_BufferConditionAnd: equ 8
+VDU_BufferConditionOr: equ 9
 
 ; Buffer Adjust Commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Buffered-Commands-API.md#command-5-adjust-buffer-contents
-VduBufferAdjust: equ 5
+VDU_BufferAdjust: equ 5
 
-VduBufferAdjustNot: equ 0
-VduBufferAdjustNegate: equ 1
-VduBufferAdjustSet: equ 2
-VduBufferAdjustAdd: equ 3
-VduBufferAdjustAddCarry: equ 4
-VduBufferAdjustAnd: equ 5
-VduBufferAdjustOr: equ 6
-VduBufferAdjustXor: equ 7
+VDU_BufferAdjustNot: equ 0
+VDU_BufferAdjustNegate: equ 1
+VDU_BufferAdjustSet: equ 2
+VDU_BufferAdjustAdd: equ 3
+VDU_BufferAdjustAddCarry: equ 4
+VDU_BufferAdjustAnd: equ 5
+VDU_BufferAdjustOr: equ 6
+VDU_BufferAdjustXor: equ 7
 
-VduBufferFlagAdvancedOffsets: equ $10
-VduBufferFlagFetchOperand: equ $20
-VduBufferFlagMultipleTarget: equ $40
-VduBufferFlagMultipleOperand: equ $80
+VDU_BufferFlagAdvancedOffsets: equ $10
+VDU_BufferFlagFetchOperand: equ $20
+VDU_BufferFlagMultipleTarget: equ $40
+VDU_BufferFlagMultipleOperand: equ $80
 
 ; Bitmap Commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Bitmaps-API.md
-VduBitmapCommand: equ 27
-VduBitmapSelect: equ 0
-VduBitmapLoad: equ 1
-VduBitmapSolidColor: equ 2
-VduBitmapDraw: equ 3
-VduBitmapSelectBuffer: equ $20
-VduBitmapCreateBuffer: equ $21
-VduBitmapFormatRGBA8888: equ 0
-VduBitmapFormatRGBA2222: equ 1
-VduBitmapFormatMono: equ 2
-VduBitmapFormatNative: equ 3
+VDU_BitmapCommand: equ 27
+VDU_BitmapSelect: equ 0
+VDU_BitmapLoad: equ 1
+VDU_BitmapSolidColor: equ 2
+VDU_BitmapDraw: equ 3
+VDU_BitmapSelectBuffer: equ $20
+VDU_BitmapCreateBuffer: equ $21
+VDU_BitmapFormatRGBA8888: equ 0
+VDU_BitmapFormatRGBA2222: equ 1
+VDU_BitmapFormatMono: equ 2
+VDU_BitmapFormatNative: equ 3
 
 ; Standard control characters
 CR:	    equ     0dh
 LF:	    equ     0ah
-EOS:    equ     0       ; end of string (null terminated)
+NULL:    equ     0       ; end of string (null terminated)
 
 ; Output a character
 ; Params:
 ;   A = character to output
 CharOut:
-    rst.lil VduSendByte
+    rst.lil VDU_SendByte
     ret
 
-; output a string terminated by EOS
+; output a string terminated by null
 ; Params:
 ;   HL = address of string
 StringOut:
     push af
     push bc
     ld bc, 0
-    ld a, EOS
+    ld a, NULL
     call BytesOut
     pop bc
     pop af
@@ -249,7 +249,7 @@ StringOut:
 ;   HL = address of bytes
 ;   BC = byte count
 BytesOut:
-    rst.lis VduSendBytes
+    rst.lis VDU_SendBytes
     ret
 
 ; Output a space
@@ -272,7 +272,7 @@ NewLine:
 ;   C = mode number
 VdpMode:
     push af
-    SendByte VduSetMode
+    SendByte VDU_SetMode
     SendByte c
     pop af
     ret
@@ -282,34 +282,34 @@ VdpMode:
 ;   C = flags
 ResetContext:
     push af
-    SendByte VduCommand
-    SendByte VduSystemCommand
-    SendByte VduContextManagement
-    SendByte VduContextReset
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_ContextManagement
+    SendByte VDU_ContextReset
     SendByte c
     pop af
     ret
 
 VdpReset:
     call ResetBitmapChars
-    ld de, VduBufferSpecial         ; clear all buffers
+    ld de, VDU_BufferSpecial         ; clear all buffers
     call ClearBuffer
-    ld c, VduContextResetAll
+    ld c, VDU_ContextResetAll
     call ResetContext
-    ld c, VduMode640x480x16         ; switch to mode 0
+    ld c, VDU_Mode640x480x16         ; switch to mode 0
     call VdpMode
     ret
 
 ; Clear the screen
 ClearScreen:
     push af
-    SendByte VduClearScreen
+    SendByte VDU_ClearScreen
     pop af
     ret
 
 CursorHome:
     push af
-    SendByte VduCursorHome
+    SendByte VDU_CursorHome
     pop af
     ret
 
@@ -319,7 +319,7 @@ CursorHome:
 ;   B = Y coordinate
 MoveTo:
     push af
-    SendByte VduCursorMove
+    SendByte VDU_CursorMove
     SendByte c
     SendByte b
     pop af
@@ -340,30 +340,30 @@ DefaultTextColor:
 ;   B = background color
 TextColor:
     push af
-    SendByte VduTextColor       ; pen (foreground)
+    SendByte VDU_TextColor       ; pen (foreground)
     SendByte c
-    SendByte VduTextColor       ; paper (background)
+    SendByte VDU_TextColor       ; paper (background)
     ld a, b
-    add VduBackgroundColor
-    rst.lis VduSendByte
+    add VDU_BackgroundColor
+    rst.lis VDU_SendByte
     pop af
     ret
 
 ; Hide the text cursor
 TextCursorHide:
     push af
-    SendByte VduCommand
-    SendByte VduCursorDisplay
-    SendByte VduCursorHide
+    SendByte VDU_Command
+    SendByte VDU_CursorDisplay
+    SendByte VDU_CursorHide
     pop af
     ret
 
 ; Show the text cursor
 TextCursorShow:
     push af
-    SendByte VduCommand
-    SendByte VduCursorDisplay
-    SendByte VduCursorShow
+    SendByte VDU_Command
+    SendByte VDU_CursorDisplay
+    SendByte VDU_CursorShow
     pop af
     ret
 
@@ -372,8 +372,8 @@ TextCursorShow:
 ;   C = bits to set
 SetCursorMovementBit:
     push af
-    SendByte VduCommand
-    SendByte VduCursorMovement
+    SendByte VDU_Command
+    SendByte VDU_CursorMovement
     SendByte c
     ld a, c
     cpl
@@ -386,8 +386,8 @@ SetCursorMovementBit:
 ;   C = bits to clear
 ClearCursorMovementBit:
     push af
-    SendByte VduCommand
-    SendByte VduCursorMovement
+    SendByte VDU_Command
+    SendByte VDU_CursorMovement
     SendByte 0
     ld a, c
     cpl
@@ -398,7 +398,7 @@ ClearCursorMovementBit:
 ; Prevent the screen from scrolling when the last character is written
 EnableScrollProtection:
     push bc
-    ld c, VduScrollProtection
+    ld c, VDU_ScrollProtection
     call SetCursorMovementBit
     pop bc
     ret
@@ -406,7 +406,7 @@ EnableScrollProtection:
 ; Allow the screen to scroll when the last character is written
 DisableScrollProtection:
     push bc
-    ld c, VduScrollProtection
+    ld c, VDU_ScrollProtection
     call ClearCursorMovementBit
     pop bc
     ret
@@ -415,9 +415,9 @@ DisableScrollProtection:
 WaitVSync:
 VsyncBufferSwap:
     push af
-    SendByte VduCommand
-    SendByte VduSystemCommand
-    SendByte VduVsyncBufferSwap
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_VsyncBufferSwap
     pop af
     ret
 
@@ -482,12 +482,12 @@ MakeRGBA2222:
 ;   DE = buffer id
 ClearBuffer:
     push af
-    SendByte VduCommand
-    SendByte VduSystemCommand
-    SendByte VduBufferCommand
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_BufferCommand
     SendByte e                  ; buffer id
     SendByte d
-    SendByte VduBufferClear
+    SendByte VDU_BufferClear
     pop af
     ret
 
@@ -496,12 +496,12 @@ ClearBuffer:
 ;   DE = buffer id
 CallBuffer:
     push af
-    SendByte VduCommand
-    SendByte VduSystemCommand
-    SendByte VduBufferCommand
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_BufferCommand
     SendByte e                  ; buffer id
     SendByte d
-    SendByte VduBufferCall
+    SendByte VDU_BufferCall
     pop af
     ret
 
@@ -510,9 +510,9 @@ CallBuffer:
 ;   DE = buffer id
 PrintBuffer:
     push af
-    SendByte VduCommand
-    SendByte VduSystemCommand
-    SendByte VduPrintBufferLiteral
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_PrintBufferLiteral
     SendByte e
     SendByte d
     pop af
@@ -532,15 +532,15 @@ SendBufferBlock:
     push hl
     push bc
     push de
-    SendByte VduCommand
-    SendByte VduSystemCommand
-    SendByte VduBufferCommand
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_BufferCommand
     SendByte e                  ; buffer id
     SendByte d
-    SendByte VduBufferWriteBlock
+    SendByte VDU_BufferWriteBlock
     SendByte c                  ; length
     SendByte b
-    rst.lis VduSendBytes
+    rst.lis VDU_SendBytes
     pop de
     pop bc
     pop hl
@@ -552,9 +552,9 @@ SendBufferBlock:
 ;   DE = buffer id
 SelectBitmapBuffer:
     push af
-    SendByte VduCommand
-    SendByte VduBitmapCommand
-    SendByte VduBitmapSelectBuffer
+    SendByte VDU_Command
+    SendByte VDU_BitmapCommand
+    SendByte VDU_BitmapSelectBuffer
     SendByte e                  ; buffer id
     SendByte d
     pop af
@@ -567,9 +567,9 @@ SelectBitmapBuffer:
 ;   L = format
 CreateBitmapFromBuffer:
     push af
-    SendByte VduCommand
-    SendByte VduBitmapCommand
-    SendByte VduBitmapCreateBuffer
+    SendByte VDU_Command
+    SendByte VDU_BitmapCommand
+    SendByte VDU_BitmapCreateBuffer
     SendByte c                  ; width
     SendByte b
     SendByte e                  ; height
@@ -583,9 +583,9 @@ CreateBitmapFromBuffer:
 ; DE = bitmap id
 MapCharToBitmap: 
     push af
-    SendByte VduCommand
-    SendByte VduSystemCommand
-    SendByte VduMapCharToBitmap
+    SendByte VDU_Command
+    SendByte VDU_SystemCommand
+    SendByte VDU_MapCharToBitmap
     SendByte c                  ; character number
     SendByte e                  ; bitmap id
     SendByte d
@@ -620,7 +620,7 @@ EscapeBufferLoop:
     cp 127
     jp nz, EscapeBufferNo
 EscapeBufferYes:                ; yes, copy the escape character first
-    ld a, VduEscapeChar
+    ld a, VDU_EscapeChar
     ld (de), a
     inc de
 EscapeBufferNo:                 ; no, just copy the character
@@ -638,7 +638,7 @@ EscapeChar:
     jp nz, EscapeCharNo
 EscapeCharYes:                  ; if so, send escape char first
     push af
-    SendByte VduEscapeChar
+    SendByte VDU_EscapeChar
     pop af
 EscapeCharNo:                   ; if not, just send char
     SendByte a

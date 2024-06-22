@@ -125,7 +125,7 @@ Help:
         defb    " f     distortion frequencies", CR, LF, CR, LF
         defb    "Parameter Modification:", CR, LF
         defb    " 1-8   increment selected parameter (+ shift to decrement)", CR, LF
-        defb    " 0     clear selected parameters", CR, LF, EOS
+        defb    " 0     clear selected parameters", CR, LF, NULL
 
 About:
         defb    "Plasma for TMS9918", CR, LF
@@ -134,7 +134,7 @@ About:
         defb    "Plascii Petsma by Cruzer/Camelot", CR, LF
         defb    "Gradient Patterns ripped from "
         defb    "Produkthandler Kom Her by Cruzer/Camelot", CR, LF, CR, LF
-        defb    "Press 'q' to quit, '?' for help.", CR, LF, EOS
+        defb    "Press 'q' to quit, '?' for help.", CR, LF, NULL
 
 ; =============================================================================
 ; parameter configuration
@@ -239,17 +239,17 @@ ClearParameterLoop:
         jp      CalcPlasmaStarts
 
 SineAddsXMsg:
-        defb CR, LF, "x increment: ", EOS
+        defb CR, LF, "x increment: ", NULL
 SineAddsYMsg:
-        defb CR, LF, "y increment: ", EOS
+        defb CR, LF, "y increment: ", NULL
 SineStartsMsg:
-        defb CR, LF, "init values: ", EOS
+        defb CR, LF, "init values: ", NULL
 SineSpeedsMsg:
-        defb CR, LF, "sine speeds: ", EOS
+        defb CR, LF, "sine speeds: ", NULL
 PlasmaFreqMsg:
-        defb CR, LF, "plasma freq: ", EOS
+        defb CR, LF, "plasma freq: ", NULL
 CycleSpeedMsg:
-        defb CR, LF, "cycle speed: ", EOS
+        defb CR, LF, "cycle speed: ", NULL
 
 ; display current parameter values
 ViewParameters:

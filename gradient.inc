@@ -166,7 +166,7 @@ LoadGradientBitmapsLoop:
 
 
 LoadAllGradientsMessage:
-    defb "Loading color gradients", EOS
+    defb "Loading color gradients", NULL
 
 LoadAllGradients:
     ld hl, LoadAllGradientsMessage
@@ -203,7 +203,7 @@ SendTile:
     push hl
     ld bc, 8
     ld de, 8
-    ld l, VduBitmapFormatRGBA2222
+    ld l, VDU_BitmapFormatRGBA2222
     call CreateBitmapFromBuffer
     pop hl
     pop de

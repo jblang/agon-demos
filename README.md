@@ -1,38 +1,52 @@
-# Z80 Plasma Demo
+# Agon Demos
 
-This is a nice, flexible plasma effect for Z80-based computers.  It is ported from the C64 demo [Plascii Petsma](https://csdb.dk/release/?id=159933) by Camelot using the custom gradient characters from [Produkthandler Kom Her](https://csdb.dk/release/?id=760), also by Camelot. 
+This is intended to become a collection of assembly-language demos for the [Agon](https://www.thebyteattic.com/p/agon.html) family of computers:
 
-## Features 
+- [AgonLight](https://github.com/TheByteAttic/AgonLight)
+- [AgonLight2](https://www.olimex.com/Products/Retro-Computers/AgonLight2/open-source-hardware)
+- [Agon Console8](https://heber.co.uk/agon-cosole8/)
 
+Right now there's only one demo (Plasma), but once I get that fully optimized, I plan to port over [Nyan Cat](https://www.youtube.com/watch?v=VAgBXoOtOkI), and after that... who knows?
+
+Perhaps most importantly, these demos are intended as a vehicle for developing a [library](vdu) of reusable assembly language routines for interacting with the [VDP](https://github.com/agonconsole8/agon-vdp).
+
+## Resources
+
+- The [Agon Community Docs](https://agonconsole8.github.io/agon-docs/) will be of great help in making sense of any of this.
+- [agon-ez80asm](https://github.com/envenomator/agon-ez80asm) is what I use to build this. Available both as a native Agon assembler, and as cross-assemblers for modern platforms.
+- YouTube Demos:
+    - [Agon Version](https://www.youtube.com/watch?v=l6ClY4K2lYk)
+    - [TMS9918A Version](https://www.youtube.com/watch?v=aIT_a1AZj5A)
+- [Hackaday.io Article](https://hackaday.io/project/159057-game-boards-for-rc2014/log/183324-plasma-effect-for-tms9918) explaining the original code for the TMS9918A
+
+## Plasma Demo
+
+A beautiful and flexible plasma effect with the following features:
+
+- easily define effects in a standard and concise format
 - change the palette independent of the effect
 - hold a particular effect on screen indefinitely
 - switch immediately to a new effect
 - runtime generation of random effects
-- adjust parameters to customize an effect
+- adjust parameters to customize effect
 
-## Further Information
+### Keyboard Commands
 
-- [Youtube Video](https://www.youtube.com/watch?v=l6ClY4K2lYk) (Agon version)
-- [Youtube Video](https://www.youtube.com/watch?v=aIT_a1AZj5A) (TMS9918 version)
-- [Hackaday.io article](https://hackaday.io/project/159057-game-boards-for-rc2014/log/183324-plasma-effect-for-tms9918) 
+- `q`: quit
+- `h`: hold current effect on/off
+- `p`: switch palette
+- `n`: next effect
+- `a`: animation on/off
+- `r`: toggle random/playlist
 
-## Supported Platforms
+The original version had additional commands that are yet to be implemented in the Agon version.
 
-- [Agon](https://www.thebyteattic.com/p/agon.html)-compatible system
+### Other Versions
 
-### Original Version
+- My Z80 port was derived from the C64 demos [Plascii Petsma](https://csdb.dk/release/?id=159933) and [Produkthandler Kom Her](https://csdb.dk/release/?id=760), both by Camelot.
+- I wrote the [Z80/TMS9918A port](https://github.com/jblang/TMS9918A/blob/master/examples/plasma.asm) for the [RCBus](https://smallcomputercentral.com/rcbus/)-compatible [TMS9918A board](https://github.com/jblang/TMS9918A) I designed.
+- The TMS9918A port can also be configured at build-time to [run on an MSX](https://www.msx.org/forum/msx-talk/development/new-plasma-effect-for-tms9918), or at least on the [BlueMSX](http://bluemsx.msxblue.com/) emulator I tested it with.
 
-For now, use [this version](https://github.com/jblang/TMS9918A/blob/master/examples/plasma.asm) on these platforms:
-
-- [RC2014](https://rc2014.co.uk/) or [RCBus](https://smallcomputercentral.com/rcbus/)-compatible system with [TMS9918A video board](https://github.com/jblang/TMS9918A/)
-- [MSX](https://www.msx.org/forum/msx-talk/development/new-plasma-effect-for-tms9918)
-
-I plan to make a common code base in this repo to support both Agon and the RCBus and MSX platforms. I have the code for the other platforms here (tms.inc, z180.inc, rcmsx.inc) but it has not been tested and certainly won't build or work without some fixes. 
-
-## Recommended Assemblers
-
-- Agon (eZ80): [agon-ez80asm](https://github.com/envenomator/agon-ez80asm)
-- Generic Z80/Z180: [sjasm](http://www.xl2s.tk/) or [sjasmplus](https://github.com/z00m128/sjasmplus)
 
 ## MIT License
 

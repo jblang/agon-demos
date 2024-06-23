@@ -73,8 +73,9 @@ VduBufferCall:
     ret
 
 ; Split a buffer into multiple buffers starting from ID
+; NB: the meaning of DE/HL are reversed compared to usual convention
 ; Params:
-;   DE = buffer id
+;   DE = source buffer id
 ;   BC = block size
 ;   HL = first target buffer id
 VduBufferSplitByWidthStartingAtID:
@@ -92,7 +93,9 @@ VduBufferSplitByWidthStartingAtID:
 ;   BC = mapping bytes (1bpp only) or mapping buffer id
 ;   DE = destination buffer ID
 ;   HL = source buffer ID
-; doesn't currently support VDU_BufferBitmapExpandAlignBit
+; NB: 
+;   - doesn't currently support VDU_BufferBitmapExpandAlignBit
+;   - must use VDU_BufferBitmapExpandMappingBufferBit for anything other than 1bpp
 VduBufferBitmapExpand:
 ; VDU 23, 0, &A0, bufferId; 72, options, sourceBufferId; [width;] <mappingDataBufferId; | mapping-data...>
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Buffered-Commands-API.md#command-72-expand-a-bitmap

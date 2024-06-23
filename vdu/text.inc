@@ -36,10 +36,10 @@ EscapeChar:
     jp nz, EscapeCharNo
 EscapeCharYes:                  ; if so, send escape char first
     push af
-    SendByte VDU_EscapeChar
+    VduSendByte VDU_EscapeChar
     pop af
 EscapeCharNo:                   ; if not, just send char
-    SendByte a
+    VduSendByte a
     ret
 
 ; output a string terminated by null
@@ -66,28 +66,28 @@ BytesOut:
 ; Output a space
 Space:
     push af
-    SendByte ' '
+    VduSendByte ' '
     pop af
     ret
 
 ; Output a new line
 NewLine:
     push af
-    SendByte CR
-    SendByte LF
+    VduSendByte CR
+    VduSendByte LF
     pop af
     ret
 
 ; Clear the screen
 ClearScreen:
     push af
-    SendByte VDU_ClearScreen
+    VduSendByte VDU_ClearScreen
     pop af
     ret
 
 CursorHome:
     push af
-    SendByte VDU_CursorHome
+    VduSendByte VDU_CursorHome
     pop af
     ret
 
@@ -97,9 +97,9 @@ CursorHome:
 ;   B = Y coordinate
 MoveTo:
     push af
-    SendByte VDU_CursorMove
-    SendByte c
-    SendByte b
+    VduSendByte VDU_CursorMove
+    VduSendByte c
+    VduSendByte b
     pop af
     ret
 
@@ -118,9 +118,9 @@ DefaultTextColor:
 ;   B = background color
 TextColor:
     push af
-    SendByte VDU_TextColor       ; pen (foreground)
-    SendByte c
-    SendByte VDU_TextColor       ; paper (background)
+    VduSendByte VDU_TextColor       ; pen (foreground)
+    VduSendByte c
+    VduSendByte VDU_TextColor       ; paper (background)
     ld a, b
     add VDU_BackgroundColor
     rst.lis VDU_SendByte
@@ -130,18 +130,18 @@ TextColor:
 ; Hide the text cursor
 TextCursorHide:
     push af
-    SendByte VDU_Command
-    SendByte VDU_CursorDisplay
-    SendByte VDU_CursorHide
+    VduSendByte VDU_Command
+    VduSendByte VDU_CursorDisplay
+    VduSendByte VDU_CursorHide
     pop af
     ret
 
 ; Show the text cursor
 TextCursorShow:
     push af
-    SendByte VDU_Command
-    SendByte VDU_CursorDisplay
-    SendByte VDU_CursorShow
+    VduSendByte VDU_Command
+    VduSendByte VDU_CursorDisplay
+    VduSendByte VDU_CursorShow
     pop af
     ret
 
@@ -150,12 +150,12 @@ TextCursorShow:
 ;   C = bits to set
 SetCursorMovementBit:
     push af
-    SendByte VDU_Command
-    SendByte VDU_CursorMovement
-    SendByte c
+    VduSendByte VDU_Command
+    VduSendByte VDU_CursorMovement
+    VduSendByte c
     ld a, c
     cpl
-    SendByte a
+    VduSendByte a
     pop af
     ret
 
@@ -164,12 +164,12 @@ SetCursorMovementBit:
 ;   C = bits to clear
 ClearCursorMovementBit:
     push af
-    SendByte VDU_Command
-    SendByte VDU_CursorMovement
-    SendByte 0
+    VduSendByte VDU_Command
+    VduSendByte VDU_CursorMovement
+    VduSendByte 0
     ld a, c
     cpl
-    SendByte a
+    VduSendByte a
     pop af
     ret
 

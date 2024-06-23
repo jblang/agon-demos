@@ -24,12 +24,12 @@
 ;   DE = buffer id
 ClearBuffer:
     push af
-    SendByte VDU_Command
-    SendByte VDU_SystemCommand
-    SendByte VDU_BufferCommand
-    SendByte e                  ; buffer id
-    SendByte d
-    SendByte VDU_BufferClear
+    VduSendByte VDU_Command
+    VduSendByte VDU_SystemCommand
+    VduSendByte VDU_BufferCommand
+    VduSendByte e                  ; buffer id
+    VduSendByte d
+    VduSendByte VDU_BufferClear
     pop af
     ret
 
@@ -38,12 +38,12 @@ ClearBuffer:
 ;   DE = buffer id
 CallBuffer:
     push af
-    SendByte VDU_Command
-    SendByte VDU_SystemCommand
-    SendByte VDU_BufferCommand
-    SendByte e                  ; buffer id
-    SendByte d
-    SendByte VDU_BufferCall
+    VduSendByte VDU_Command
+    VduSendByte VDU_SystemCommand
+    VduSendByte VDU_BufferCommand
+    VduSendByte e                  ; buffer id
+    VduSendByte d
+    VduSendByte VDU_BufferCall
     pop af
     ret
 
@@ -61,14 +61,14 @@ SendBufferBlock:
     push hl
     push bc
     push de
-    SendByte VDU_Command
-    SendByte VDU_SystemCommand
-    SendByte VDU_BufferCommand
-    SendByte e                  ; buffer id
-    SendByte d
-    SendByte VDU_BufferWriteBlock
-    SendByte c                  ; length
-    SendByte b
+    VduSendByte VDU_Command
+    VduSendByte VDU_SystemCommand
+    VduSendByte VDU_BufferCommand
+    VduSendByte e                  ; buffer id
+    VduSendByte d
+    VduSendByte VDU_BufferWriteBlock
+    VduSendByte c                  ; length
+    VduSendByte b
     rst.lis VDU_SendBytes
     pop de
     pop bc

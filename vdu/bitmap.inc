@@ -28,11 +28,11 @@
 ;   DE = buffer id
 SelectBitmapBuffer:
     push af
-    SendByte VDU_Command
-    SendByte VDU_BitmapCommand
-    SendByte VDU_BitmapSelectBuffer
-    SendByte e                  ; buffer id
-    SendByte d
+    VduSendByte VDU_Command
+    VduSendByte VDU_BitmapCommand
+    VduSendByte VDU_BitmapSelectBuffer
+    VduSendByte e                  ; buffer id
+    VduSendByte d
     pop af
     ret
 
@@ -43,13 +43,13 @@ SelectBitmapBuffer:
 ;   L = format
 CreateBitmapFromBuffer:
     push af
-    SendByte VDU_Command
-    SendByte VDU_BitmapCommand
-    SendByte VDU_BitmapCreateBuffer
-    SendByte c                  ; width
-    SendByte b
-    SendByte e                  ; height
-    SendByte d
-    SendByte l                  ; format
+    VduSendByte VDU_Command
+    VduSendByte VDU_BitmapCommand
+    VduSendByte VDU_BitmapCreateBuffer
+    VduSendByte c                  ; width
+    VduSendByte b
+    VduSendByte e                  ; height
+    VduSendByte d
+    VduSendByte l                  ; format
     pop af
     ret

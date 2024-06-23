@@ -183,7 +183,7 @@ LoadAllGradientsLoop:
     pop hl
     ld bc, ColorPaletteStride
     add ix, bc
-    SendByte '.'
+    VduSendByte '.'
     pop bc
     djnz LoadAllGradientsLoop
     call NewLine

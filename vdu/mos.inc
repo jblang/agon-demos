@@ -19,22 +19,49 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
-; Convenience macros for interacting with the VDP
+; Convenience wrappers for MOS calls to interact with VDP
 
-    macro SendByte value
+; Send a single byte to the CPU
+; Caller must push/pop af if necessary
+    macro VduSendByte value
         ld a, value
         rst.lis VDU_SendByte
     endmacro
 
-    macro SendBuff addr, length
-        ld hl, addr
-        ld bc, length
-        rst.lis VDU_SendBytes
-    endmacro
+; Send bytes to VDU
+;   HL = address of bytes to send
+;   BC = number of bytes to send
+; Returns:
+;   HL = next address after bytes sent
+VduSendBytes:
+    push af
+    push bc
+    push de
+    rst.lis VDU_SendBytes
+    pop de
+    pop bc
+    pop af
+    ret
 
-    macro SendString addr, term
-        ld hl, addr
-        ld bc, 0
-        ld a, term
-        rst.lis VDU_SendBytes
-    endmacro
+; Send a character to VDU
+;   A = char to send
+VduSendChar:
+    rst.lis VDU_SendBytes
+    ret
+
+; Send null-terminated string to VDU
+;   HL = address of string to send
+; Returns:
+;   HL = next address after string terminator
+VduSendString:
+    push af
+    push bc
+    push de
+    ld bc, 0
+    ld a, NULL
+    rst.lis VDU_SendBytes
+    pop de
+    pop bc
+    pop af
+    inc hl      ; move past terminator
+    ret

@@ -24,10 +24,10 @@
 ;   C = flags
 ResetContext:
     push af
-    SendByte VDU_Command
-    SendByte VDU_SystemCommand
-    SendByte VDU_ContextManagement
-    SendByte VDU_ContextReset
-    SendByte c
+    VduSendByte VDU_Command
+    VduSendByte VDU_SystemCommand
+    VduSendByte VDU_ContextManagement
+    VduSendByte VDU_ContextReset
+    VduSendByte c
     pop af
     ret

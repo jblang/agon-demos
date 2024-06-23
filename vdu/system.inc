@@ -27,8 +27,8 @@
 ;   C = mode number
 VdpMode:
     push af
-    SendByte VDU_SetMode
-    SendByte c
+    VduSendByte VDU_SetMode
+    VduSendByte c
     pop af
     ret
 
@@ -36,9 +36,9 @@ VdpMode:
 WaitVSync:
 VsyncBufferSwap:
     push af
-    SendByte VDU_Command
-    SendByte VDU_SystemCommand
-    SendByte VDU_VsyncBufferSwap
+    VduSendByte VDU_Command
+    VduSendByte VDU_SystemCommand
+    VduSendByte VDU_VsyncBufferSwap
     pop af
     ret
 
@@ -47,11 +47,11 @@ VsyncBufferSwap:
 ;   DE = buffer id
 PrintBuffer:
     push af
-    SendByte VDU_Command
-    SendByte VDU_SystemCommand
-    SendByte VDU_PrintBufferLiteral
-    SendByte e
-    SendByte d
+    VduSendByte VDU_Command
+    VduSendByte VDU_SystemCommand
+    VduSendByte VDU_PrintBufferLiteral
+    VduSendByte e
+    VduSendByte d
     pop af
     ret
 
@@ -60,11 +60,11 @@ PrintBuffer:
 ; DE = bitmap id
 MapCharToBitmap: 
     push af
-    SendByte VDU_Command
-    SendByte VDU_SystemCommand
-    SendByte VDU_MapCharToBitmap
-    SendByte c                  ; character number
-    SendByte e                  ; bitmap id
-    SendByte d
+    VduSendByte VDU_Command
+    VduSendByte VDU_SystemCommand
+    VduSendByte VDU_MapCharToBitmap
+    VduSendByte c                  ; character number
+    VduSendByte e                  ; bitmap id
+    VduSendByte d
     pop af
     ret

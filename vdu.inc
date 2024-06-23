@@ -21,17 +21,17 @@
 
 ; uncomment or comment to enable or disable features
 
-    include "vdu/constants.inc"     ; constants only; no code
-    include "vdu/macros.inc"        ; convenient macros
+    include "vdu/constants.inc"     ; Constants only; no code
+    include "vdu/mos.inc"           ; VDP-related MOS calls
 
-    include "vdu/text.inc"
-    include "vdu/graphics.inc"
-    include "vdu/system.inc"
+    include "vdu/text.inc"          ; Text commands
+    include "vdu/graphics.inc"      ; Graphics commands
+    include "vdu/system.inc"        ; System commands
 
-    include "vdu/audio.inc"
-    include "vdu/bitmap.inc"
-    include "vdu/buffer.inc"
-    include "vdu/context.inc"
-    include "vdu/font.inc"
+    include "vdu/audio.inc"         ; Audio API
+    include "vdu/bitmap.inc"        ; Bitmaps And Sprites API
+    include "vdu/buffer.inc"        ; Buffered Commands API
+    include "vdu/context.inc"       ; Context Management API
+    include "vdu/font.inc"          ; Font Management API
 
-    include "vdu/utility.inc"
+    include "vdu/utility.inc"       ; Utility routines

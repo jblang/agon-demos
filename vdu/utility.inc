@@ -134,7 +134,7 @@ LoadTable:
     push de
 LoadTableLoop:
     ld a, (ix+0)
-    SendByte a
+    VduSendByte a
     inc ix
     dec d
     jp nz, LoadTableLoop

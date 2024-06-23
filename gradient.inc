@@ -252,3 +252,28 @@ MakeTileNextCol:
     pop de
     ex de, hl
     ret
+
+TempBufferID: equ $100
+GradientPatternStartID: equ TempBufferID + 1
+GradientColorStartID: equ GradientPatternStartID + GradientCount
+
+SendGradientPatterns:
+    ld de, TempBufferID
+    ld hl, Gradient
+    ld bc, GradientLength
+    call VduBufferClearAndWrite
+    ld hl, GradientPatternStartID
+    ld bc, GradientStride
+    call VduBufferSplitByWidthStartingAtID
+    ret
+
+SendGradientColors:
+    call MakeColorRamp
+    ld de, TempBufferID
+    ld hl, TempColorBuffer
+    ld bc, TempColorBufferLength
+    call VduBufferClearAndWrite
+    ld hl, GradientColorStartID
+    ld bc, 2
+    call VduBufferSplitByWidthStartingAtID
+    ret

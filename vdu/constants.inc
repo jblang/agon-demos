@@ -136,14 +136,14 @@ VDU_ContextSelectStack: equ 0
 VDU_ContextDeleteStack: equ 1
 VDU_ContextReset: equ 2
 
-VDU_ContextResetGraphicsPainting: equ $01
-VDU_ContextResetGraphicsPositioning: equ $02
-VDU_ContextResetTextPainting: equ $04
-VDU_ContextResetTextCursorVisuals: equ $08
-VDU_ContextResetTextCursorBehavior: equ $10
-VDU_ContextResetFonts: equ $20
-VDU_ContextResetBitmapChars: equ $40
-VDU_ContextResetReserved: equ $80
+VDU_ContextResetGraphicsPainting: equ 1 << 0
+VDU_ContextResetGraphicsPositioning: equ 1 << 1
+VDU_ContextResetTextPainting: equ 1 << 2
+VDU_ContextResetTextCursorVisuals: equ 1 << 3
+VDU_ContextResetTextCursorBehavior: equ 1 << 4
+VDU_ContextResetFonts: equ 1 << 5
+VDU_ContextResetBitmapChars: equ 1 << 6
+VDU_ContextResetReserved: equ 1 << 7
 VDU_ContextResetAll: equ $ff
 
 ; Buffer commands
@@ -153,11 +153,13 @@ VDU_BufferWriteBlock: equ 0
 VDU_BufferCall: equ 1
 VDU_BufferClear: equ 2
 VDU_BufferCopyBlocks: equ 13
+VDU_BufferSplitByWidthStartingAtID: equ 17
 VDU_BufferBitmapExpand: equ 72
 
-VDU_BufferBitmapExpandBppMask: equ 3
-VDU_BufferBitmapExpandAlignBit: equ 3
-VDU_BufferBitmapExpandMappingBufferBit: equ 4
+; Expand bitmap options
+VDU_BufferBitmapExpandBppMask: equ $3
+VDU_BufferBitmapExpandAlignBit: equ 1 << 3
+VDU_BufferBitmapExpandMappingBufferBit: equ 1 << 4
 
 VDU_BufferSpecial: equ $ffff
 
@@ -188,10 +190,10 @@ VDU_BufferAdjustAnd: equ 5
 VDU_BufferAdjustOr: equ 6
 VDU_BufferAdjustXor: equ 7
 
-VDU_BufferFlagAdvancedOffsets: equ $10
-VDU_BufferFlagFetchOperand: equ $20
-VDU_BufferFlagMultipleTarget: equ $40
-VDU_BufferFlagMultipleOperand: equ $80
+VDU_BufferFlagAdvancedOffsets: equ 1 << 3
+VDU_BufferFlagFetchOperand: equ 1 << 4
+VDU_BufferFlagMultipleTarget: equ 1 << 5
+VDU_BufferFlagMultipleOperand: equ 1 << 6
 
 ; Bitmap Commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Bitmaps-API.md

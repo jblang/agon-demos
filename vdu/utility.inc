@@ -23,7 +23,7 @@
 VdpReset:
     call ResetBitmapChars
     ld de, VDU_BufferSpecial         ; clear all buffers
-    call ClearBuffer
+    call VduBufferClear
     ld c, VDU_ContextResetAll
     call ResetContext
     ld c, VDU_Mode640x480x16         ; switch to mode 0

@@ -195,8 +195,8 @@ LoadAllGradientsLoop:
 ;   BC = bitmap length
 ;   DE = bitmap ID
 SendTile:
-    call ClearBuffer
-    call SendBufferBlock
+    call VduBufferClear
+    call VduBufferWrite
     call SelectBitmapBuffer
     push bc
     push de

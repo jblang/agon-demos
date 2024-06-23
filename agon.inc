@@ -112,11 +112,11 @@ DrawScreenEscaped:
     pop bc
     ld hl, VduBuffer            ; Send the buffer to the VDU
     ld de, (BitmapCounter)
-    call ClearBuffer
-    call SendBufferBlock
+    call VduBufferClear
+    call VduBufferWrite
     call WaitVSync
     call CursorHome
-    call CallBuffer
+    call VduBufferCall
     ret
 
 ; Send screen buffer to the VDU and then draw it using the PrintBuffer command, new in 2.9.0
@@ -124,8 +124,8 @@ DrawScreenLiteral:
     ld hl, ScreenBuffer
     ld bc, ScreenSize
     ld de, (BitmapCounter)
-    call ClearBuffer
-    call SendBufferBlock
+    call VduBufferClear
+    call VduBufferWrite
     call WaitVSync
     call CursorHome
     call PrintBuffer

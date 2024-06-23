@@ -19,59 +19,55 @@
 ; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 ; DEALINGS IN THE SOFTWARE.
 
-; Clear a buffer
-; Params:
-;   DE = buffer id
-ClearBuffer:
-    push af
+; convenience routine to send common buffer header bytes
+VduBufferHeader:
     VduSendByte VDU_Command
     VduSendByte VDU_SystemCommand
     VduSendByte VDU_BufferCommand
-    VduSendByte e                  ; buffer id
+    VduSendByte e                   ; buffer id
     VduSendByte d
-    VduSendByte VDU_BufferClear
+    ret
+
+; convenience macro to send buffer command header
+    macro VduBufferCommand command
+    push af
+    call VduBufferHeader
+    ld a, command
+    rst.lis VDU_SendByte
     pop af
+    endmacro
+
+; Clear a buffer, then write data to it
+VduBufferClearAndWrite:
+    call VduBufferClear
+    ; fallthrough
+
+; Write a block of data to a buffer
+; Params:
+;   DE = buffer id
+;   BC = buffer length
+;   HL = buffer data
+VduBufferWrite:
+    VduBufferCommand VDU_BufferWriteBlock
+    push af
+    VduSendByte c                   ; length
+    VduSendByte b
+    pop af
+    push hl
+    call VduSendBytes
+    pop hl
+    ret
+
+; Clear a buffer
+; Params:
+;   DE = buffer id
+VduBufferClear:
+    VduBufferCommand VDU_BufferClear
     ret
 
 ; Call a buffer
 ; Params:
 ;   DE = buffer id
-CallBuffer:
-    push af
-    VduSendByte VDU_Command
-    VduSendByte VDU_SystemCommand
-    VduSendByte VDU_BufferCommand
-    VduSendByte e                  ; buffer id
-    VduSendByte d
-    VduSendByte VDU_BufferCall
-    pop af
-    ret
-
-ClearAndSendBuffer:
-    call ClearBuffer
-    ; fallthrough
-
-; Send a block of data to a buffer
-; Params:
-;   DE = buffer id
-;   BC = buffer length
-;   HL = buffer data
-SendBufferBlock:
-    push af
-    push hl
-    push bc
-    push de
-    VduSendByte VDU_Command
-    VduSendByte VDU_SystemCommand
-    VduSendByte VDU_BufferCommand
-    VduSendByte e                  ; buffer id
-    VduSendByte d
-    VduSendByte VDU_BufferWriteBlock
-    VduSendByte c                  ; length
-    VduSendByte b
-    rst.lis VDU_SendBytes
-    pop de
-    pop bc
-    pop hl
-    pop af
+VduBufferCall:
+    VduBufferCommand VDU_BufferCall
     ret

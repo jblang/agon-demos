@@ -30,7 +30,7 @@ Entry:
 Main:
     call InitBuffers
     ld de, DrawLoopBuffer
-    call CallBuffer
+    call VduBufferCall
     call NewLine
     ret
 
@@ -39,11 +39,11 @@ InitBuffers:
     ld hl, DrawLoop
     ld de, DrawLoopBuffer
     ld bc, DrawLoopLength
-    call ClearAndSendBuffer
+    call VduBufferClearAndWrite
     ld hl, Draw
     ld de, DrawBuffer
     ld bc, DrawLength
-    call ClearAndSendBuffer
+    call VduBufferClearAndWrite
     ret
 
 

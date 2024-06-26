@@ -12,18 +12,19 @@ Main:
     jp Exit
 
 Banner:
-    defb "Plasma Test Suite by J.B. Langston", CR, LF, CR, LF, EOS
+    defb "Plasma Test Suite by J.B. Langston", CR, LF, CR, LF, NULL
 
 Init:
     ld c, 3                     ; 640x480 16 colors
     call VdpMode
+    call SetupVduGradientBuffers
     call ClearScreen
     ld hl, Banner
     call StringOut
     ret
 
 RGBA2222TestMessage:
-    defb "RGBA2222 Conversion: ", CR, LF, EOS
+    defb "RGBA2222 Conversion: ", CR, LF, NULL
 
 RGBA2222Test:
     ld hl, RGBA2222TestMessage
@@ -55,10 +56,10 @@ RGBA2222BufferLength: equ $ - RGBA2222Buffer
 
 ColorRampTestMessage:
     defb "Color Ramp Generation Test:", CR, LF
-    defb "FG: ", EOS
+    defb "FG: ", NULL
 
 ColorRampBGMessage:
-    defb CR, LF, "BG: ", EOS
+    defb CR, LF, "BG: ", NULL
 
 ColorRampTest:
     ld hl, ColorRampTestMessage
@@ -80,7 +81,7 @@ ColorRampTest:
     ret
 
 TileTestMessage:
-    defb "Tile Generation Test:", CR, LF, EOS
+    defb "Tile Generation Test:", CR, LF, NULL
 
 TileTest:
     ld c, $ff
@@ -110,10 +111,10 @@ GradientTestMessage:
     defb "Color Gradient Test:"
 
 GradientCountMessage:
-    defb " <- Gradient ", EOS
+    defb " <- Gradient ", NULL
 
 GradientNextMessage:
-    defb "; press any key...", CR, LF, CR, LF, EOS
+    defb "; press any key...", CR, LF, CR, LF, NULL
 
 GradientTest:
     call LoadAllGradients
@@ -136,7 +137,7 @@ GradientTestLoop:
     ret
 
 CountControlTestMessage:
-    defb "Control character counting test (33 out of 256):", CR, LF, CR, LF, EOS
+    defb "Control character counting test (33 out of 256):", CR, LF, CR, LF, NULL
 
 CountControlTest:
     ret
@@ -144,4 +145,5 @@ CountControlTest:
 ColorPalette:
         defb    0
 
-ScreenBuffer:   equ $ + ScreenSize
+ScreenBuffer:   equ $
+VduBuffer: equ $ + ScreenSize

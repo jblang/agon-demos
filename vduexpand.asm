@@ -30,14 +30,27 @@ Entry:
     ret                                     ; return to MOS
 
 Main:
-    call SendGradientPatterns
-    ld hl, C64PaletteRGBA2222
-    ld ix, ColorPalettes
-    call SendGradientColors
-    ld hl, GradientPatternStartID+16
-    ld bc, GradientColorStartID
-    ld a, 1 | VDU_BufferBitmapExpandMappingBufferBit
-    call VduBufferBitmapExpand
+    call SetupVduGradientBuffers
+
+    ld de, GradientSegmentLoopID
+    call VduBufferCall
+
+    ld de, 0
+    call SetGradient
+
+    ld a, 0
+OutputCharLoop:
+    call EscapeChar
+    inc a
+    jp nz, OutputCharLoop
+
+    ;ld hl, C64PaletteRGBA2222
+    ;ld ix, ColorPalettes
+    ;call SendGradientColors
+    ;ld hl, GradientPatternStartID+16
+    ;ld bc, GradientColorStartID
+    ;ld a, 1 | VDU_BufferBitmapExpandMappingBufferBit
+    ;call VduBufferBitmapExpand
     ret
 
 ColorPalette:

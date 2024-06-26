@@ -22,6 +22,8 @@ DEFAULT_BAUDRATE      = 115200
 DEFAULT_LINE_WAITTIME = 0.000      ## A value of +/- 0.003 Helps PC serial drivers with low buffer memory
 IHEXBYTELENGTH = 255
 WAITCRC = True  # request extended format, if available from the VDP
+SUPPRESS_DTR = True
+MONITOR = True
 
 def errorexit(message):
   print(message)
@@ -144,11 +146,9 @@ else:
       crc32.update(byte)
       byte = f.read(1)
 
-resetPort = False
-
 if(os.name == 'posix'):
-  if resetPort == False:
-  # to be able to suppress DTR, we need this
+  if SUPPRESS_DTR:
+    # suppress DTR toggle when port is closed (hang up signal)
     f = open(serialport)
     attrs = termios.tcgetattr(f)
     attrs[2] = attrs[2] & ~termios.HUPCL
@@ -166,13 +166,9 @@ ser.baudrate = baudrate
 ser.port = serialport
 ser.timeout = 2
 
-# OS-specific serial dtr/rts settings
-if(os.name == 'nt'):
-  ser.setDTR(False)
-  ser.setRTS(False)
-if(os.name == 'posix'):
-  ser.rtscts = False            # not setting to false prevents communication
-  ser.dsrdtr = resetPort        # determines if Agon resets or not
+# these control automatic handshaking on these pins; both should be disabled
+ser.rtscts = False            # not setting to false prevents communication
+ser.dsrdtr = False            # toggling dtr will cause the agon to reset
 
 try:
     ser.open()
@@ -224,6 +220,12 @@ try:
         else:
             print('CRC ERROR')
     print('Done')
+
+    if MONITOR:
+       print("Starting serial monitor...\n\n")
+       while True:
+          if ser.in_waiting > 0:
+             print(ser.read().decode("ascii"), end="")
 
     ser.close()
 except serial.SerialException:

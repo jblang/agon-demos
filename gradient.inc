@@ -253,11 +253,14 @@ MakeTileNextCol:
     ex de, hl
     ret
 
-TempBufferID: equ $100
-GradientPatternStartID: equ TempBufferID + 1
-GradientColorStartID: equ GradientPatternStartID + GradientCount
+TileBufferStartID: equ 0
+TempBufferID: equ $1000
+GradientSegmentStepID: equ $1001
+GradientSegmentLoopID: equ $1002
+CreateGradientID: equ $1003
+GradientPatternStartID: equ $1100
 
-SendGradientPatterns:
+SetupVduGradientBuffers:
     ld de, TempBufferID
     ld hl, Gradient
     ld bc, GradientLength
@@ -265,15 +268,120 @@ SendGradientPatterns:
     ld hl, GradientPatternStartID
     ld bc, GradientStride
     call VduBufferSplitByWidthStartingAtID
+    ld hl, GradientSegmentStep
+    ld bc, GradientSegmentStepLength
+    ld de, GradientSegmentStepID
+    call VduBufferClearAndWrite
+    ld hl, GradientSegmentLoop
+    ld bc, GradientSegmentLoopLength
+    ld de, GradientSegmentLoopID
+    call VduBufferClearAndWrite
+    ld hl, GradientSegmentColors
+    ld bc, GradientSegmentColorsLength
+    ld de, TempBufferID
+    call VduBufferClearAndWrite
     ret
 
-SendGradientColors:
-    call MakeColorRamp
+VduLoadGradientSegment:
+    push af
+    push hl
+    push bc
+    push de
+    ld a, (ix+0)
+    ld (GradientSegmentColor0), a
+    ld a, (ix+8)
+    ld (GradientSegmentColor1), a
+    ld hl, GradientSegmentColors
+    ld bc, GradientSegmentColorsLength
     ld de, TempBufferID
-    ld hl, TempColorBuffer
-    ld bc, TempColorBufferLength
     call VduBufferClearAndWrite
-    ld hl, GradientColorStartID
-    ld bc, 2
-    call VduBufferSplitByWidthStartingAtID
+    ld de, GradientSegmentLoopID
+    call VduBufferCall
+    pop bc
+    pop hl
+    pop de
+    pop af
     ret
+
+GradientSegmentColors:
+GradientSegmentColor0:
+    defb $00
+GradientSegmentColor1:
+    defb $ff
+GradientSegmentColorsLength: equ $ - GradientSegmentColors
+
+; VDU program to 
+GradientSegmentStep:
+    ; expand the current bitmap into target buffer
+    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand
+GradientTargetID1: equ $ - GradientSegmentStep
+    defw TileBufferStartID
+    defb VDU_BufferBitmapExpand
+    defb 1 | VDU_BufferBitmapExpandMappingBufferBit
+GradientSourceID: equ $ - GradientSegmentStep
+    defw GradientPatternStartID
+    defw TempBufferID
+
+    ; select the target buffer
+    defb VDU_Command, VDU_BitmapCommand, VDU_BitmapSelectBuffer
+GradientTargetID2: equ $ - GradientSegmentStep
+    defw TileBufferStartID
+
+    ; create bitmap form the selected buffer
+    defb VDU_Command, VDU_BitmapCommand, VDU_BitmapCreateBuffer
+    defw 8
+    defw 8
+    defb VDU_BitmapFormatRGBA2222
+
+;    ; map the bitmap to the corresponding character
+;    defb VDU_Command, VDU_SystemCommand, VDU_MapCharToBitmap
+;GradientCharID: equ $ - GradientSegmentStep
+;    defb 0
+;GradientTargetID3: equ $ - GradientSegmentStep
+;    defw TileBufferStartID
+GradientSegmentStepLength: equ $ - GradientSegmentStep
+
+    macro SetBufferByte buffer, offset, value
+    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand ; 23, 0, &A0
+    defw buffer                     ; target
+    defb VDU_BufferAdjust           ; command
+    defb VDU_BufferAdjustSet        ; operation
+    defw offset                     ; offset
+    defb value                      ; operand
+    endmacro
+
+    macro IncBufferByte buffer, offset, increment
+    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand ; 23, 0, &A0
+    defw buffer                     ; target
+    defb VDU_BufferAdjust           ; command
+    defb VDU_BufferAdjustAdd        ; operation
+    defw offset                     ; offset
+    defb increment                  ; operand
+    endmacro
+
+    macro BufferCall buffer
+    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand ; 23, 0, &A0
+    defw GradientSegmentStepID         ; target
+    defb VDU_BufferCall             ; command
+    endmacro
+
+    macro JumpWhileLessOrEqual buffer, offset, value
+    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand ; 23, 0, &A0
+    defw buffer                         ; target
+    defb VDU_BufferConditionalJump      ; command
+    defb VDU_BufferConditionLessOrEqual ; operation
+    defw GradientSegmentStepID          ; source buffer
+    defw offset                         ; offset
+    defb value                          ; value
+    endmacro
+
+GradientSegmentLoop:
+    BufferCall GradientSegmentStepID
+    IncBufferByte GradientSegmentStepID, GradientTargetID1, 1
+    IncBufferByte GradientSegmentStepID, GradientTargetID2, 1
+    ;IncBufferByte GradientSegmentStepID, GradientTargetID3, 1
+    IncBufferByte GradientSegmentStepID, GradientSourceID, 1
+    ;IncBufferByte GradientSegmentStepID, GradientCharID, 1
+    JumpWhileLessOrEqual GradientSegmentLoopID, GradientSourceID, GradientCount
+    SetBufferByte GradientSegmentStepID, GradientSourceID, 0
+GradientSegmentLoopLength: equ $ - GradientSegmentLoop

@@ -30,19 +30,19 @@ Entry:
     ret                                     ; return to MOS
 
 Main:
-    call SetupVduGradientBuffers
+    call GradientSetup
 
-    ld de, GradientSegmentLoopID
-    call VduBufferCall
-
-    ld de, 0
-    call SetGradient
-
-    ld a, 0
-OutputCharLoop:
-    call EscapeChar
-    inc a
-    jp nz, OutputCharLoop
+;    ld de, TileExpandLoopID
+;    call VduBufferCall
+;
+;    ld de, 0
+;    call SetGradient
+;
+;    ld a, 0
+;OutputCharLoop:
+;    call EscapeChar
+;    inc a
+;    jp nz, OutputCharLoop
 
     ;ld hl, C64PaletteRGBA2222
     ;ld ix, ColorPalettes

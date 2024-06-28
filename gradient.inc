@@ -128,7 +128,7 @@ LoadPalette:
 LoadGradientSegment:
     ld hl, Gradient
     ld a, GradientCount
-LoadGradientSegmentLoop:
+LoadTileExpandLoop:
     ld de, TempTileBuffer
     call MakeTile
     push hl
@@ -142,7 +142,7 @@ LoadGradientSegmentLoop:
     inc de
     ld (BitmapCounter), de
     dec a
-    jp nz, LoadGradientSegmentLoop
+    jp nz, LoadTileExpandLoop
     ret
 
 ; Load bitmaps for gradient of the currently loaded colors
@@ -253,135 +253,145 @@ MakeTileNextCol:
     ex de, hl
     ret
 
-TileBufferStartID: equ 0
-TempBufferID: equ $1000
-GradientSegmentStepID: equ $1001
-GradientSegmentLoopID: equ $1002
-CreateGradientID: equ $1003
-GradientPatternStartID: equ $1100
-
-SetupVduGradientBuffers:
-    ld de, TempBufferID
-    ld hl, Gradient
-    ld bc, GradientLength
+GradientSetup:
+    ; load all the buffers in the buffer load table
+    ld ix, GradientBufferTable
+    ld bc, GradientBufferTableStride
+    ld a, GradientBufferTableCount
+GradientSetupLoop:
+    push bc
+    ld de, (ix+0)
+    ld hl, (ix+3)
+    ld bc, (ix+6)
     call VduBufferClearAndWrite
-    ld hl, GradientPatternStartID
+    pop bc
+    add ix, bc
+    dec a
+    jp nz, GradientSetupLoop
+    ; split temp buffer into separate tile pattern buffers
+    ld de, TempBufferID
+    ld hl, TilePatternStartID
     ld bc, GradientStride
     call VduBufferSplitByWidthStartingAtID
-    ld hl, GradientSegmentStep
-    ld bc, GradientSegmentStepLength
-    ld de, GradientSegmentStepID
-    call VduBufferClearAndWrite
-    ld hl, GradientSegmentLoop
-    ld bc, GradientSegmentLoopLength
-    ld de, GradientSegmentLoopID
-    call VduBufferClearAndWrite
-    ld hl, GradientSegmentColors
-    ld bc, GradientSegmentColorsLength
-    ld de, TempBufferID
-    call VduBufferClearAndWrite
     ret
 
-VduLoadGradientSegment:
-    push af
+; H = color for 1 bits
+; L = color for 0 bits
+GradientLoadSegment:
+    ld (TileColors), hl
     push hl
     push bc
     push de
-    ld a, (ix+0)
-    ld (GradientSegmentColor0), a
-    ld a, (ix+8)
-    ld (GradientSegmentColor1), a
-    ld hl, GradientSegmentColors
-    ld bc, GradientSegmentColorsLength
+    ld hl, TileColors
+    ld bc, TileColorsLength
     ld de, TempBufferID
     call VduBufferClearAndWrite
-    ld de, GradientSegmentLoopID
+    ld de, TileExpandLoopID
     call VduBufferCall
     pop bc
     pop hl
     pop de
-    pop af
     ret
 
-GradientSegmentColors:
-GradientSegmentColor0:
-    defb $00
-GradientSegmentColor1:
-    defb $ff
-GradientSegmentColorsLength: equ $ - GradientSegmentColors
+TileBufferStartID: equ 0
+TempBufferID: equ $1000
+TileExpandID: equ $1001
+TileExpandLoopID: equ $1002
+TileCreateID: equ $1003
+TileCreateLoopID: equ $1004
+TileCreateStartID: equ $1005
+TileMapID: equ $1006
+TileMapLoopID: equ $1007
+TileMapStartID: equ $1008
+TilePatternStartID: equ $1100
 
-; VDU program to 
-GradientSegmentStep:
-    ; expand the current bitmap into target buffer
+; table of buffer ID, starting address, and length to load
+GradientBufferTable:
+    dw24 TempBufferID, Gradient, GradientLength
+GradientBufferTableStride: equ $ - GradientBufferTable
+    dw24 TileExpandID, TileExpand, TileExpandLength
+    dw24 TileExpandLoopID, TileExpandLoop, TileExpandLoopLength
+    dw24 TileCreateID, TileCreate, TileCreateLength
+    dw24 TileCreateLoopID, TileCreateLoop, TileCreateLoopLength
+    dw24 TileCreateStartID, TileCreateStart, TileCreateStartLength
+    dw24 TileMapID, TileMap, TileMapLength
+    dw24 TileMapLoopID, TileMapLoop, TileMapLoopLength
+    dw24 TileMapStartID, TileMapStart, TileMapStartLength
+GradientBufferTableLength: equ $ - GradientBufferTable
+GradientBufferTableCount: equ GradientBufferTableLength / GradientBufferTableStride
+
+TileColors:
+TileColor0:
+    defb $00
+TileColor1:
+    defb $ff
+TileColorsLength: equ $ - TileColors
+
+; expand the source buffer into the target buffer using colors in temp buffer
+TileExpand:
     defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand
-GradientTargetID1: equ $ - GradientSegmentStep
+TileExpandDest: equ $ - TileExpand
     defw TileBufferStartID
     defb VDU_BufferBitmapExpand
     defb 1 | VDU_BufferBitmapExpandMappingBufferBit
-GradientSourceID: equ $ - GradientSegmentStep
-    defw GradientPatternStartID
+TileExpandSource: equ $ - TileExpand
+    defw TilePatternStartID
     defw TempBufferID
+TileExpandLength: equ $ - TileExpand
 
-    ; select the target buffer
+; expand all the tiles in a gradient segment
+TileExpandLoop:
+    VduProgCall TileExpandID
+    VduProgAdjust TileExpandID, TileExpandDest, VDU_BufferOpAdd, 1
+    VduProgAdjust TileExpandID, TileExpandSource, VDU_BufferOpAdd, 1
+    VduProgJumpIf TileExpandLoopID, TileExpandID, TileExpandSource, VDU_BufferCondLE, GradientCount
+    VduProgAdjust TileExpandID, TileExpandSource, VDU_BufferOpSet, 0
+TileExpandLoopLength: equ $ - TileExpandLoop
+
+; create a bitmap from the buffer containing the 8x8 RGBA2222 tile definition
+TileCreate:
     defb VDU_Command, VDU_BitmapCommand, VDU_BitmapSelectBuffer
-GradientTargetID2: equ $ - GradientSegmentStep
+TileCreateSource: equ $ - TileExpand
     defw TileBufferStartID
-
-    ; create bitmap form the selected buffer
     defb VDU_Command, VDU_BitmapCommand, VDU_BitmapCreateBuffer
     defw 8
     defw 8
     defb VDU_BitmapFormatRGBA2222
+TileCreateLength: equ $ - TileCreate
 
-;    ; map the bitmap to the corresponding character
-;    defb VDU_Command, VDU_SystemCommand, VDU_MapCharToBitmap
-;GradientCharID: equ $ - GradientSegmentStep
-;    defb 0
-;GradientTargetID3: equ $ - GradientSegmentStep
-;    defw TileBufferStartID
-GradientSegmentStepLength: equ $ - GradientSegmentStep
+TileCreateLoop:
+    VduProgCall TileCreateID
+    VduProgAdjust TileCreateID, TileCreateSource, VDU_BufferOpAdd, 1
+    VduProgJumpIf TileCreateLoopID, TileCreateID, TileCreateSource, VDU_BufferCondNE, 0
+TileCreateLoopLength: equ $ - TileCreateLoop
 
-    macro SetBufferByte buffer, offset, value
-    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand ; 23, 0, &A0
-    defw buffer                     ; target
-    defb VDU_BufferAdjust           ; command
-    defb VDU_BufferAdjustSet        ; operation
-    defw offset                     ; offset
-    defb value                      ; operand
-    endmacro
+SetFromBuffer: equ VDU_BufferOpSet | VDU_BufferFlagFetchOperand | VDU_BufferFlagMultipleTarget
 
-    macro IncBufferByte buffer, offset, increment
-    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand ; 23, 0, &A0
-    defw buffer                     ; target
-    defb VDU_BufferAdjust           ; command
-    defb VDU_BufferAdjustAdd        ; operation
-    defw offset                     ; offset
-    defb increment                  ; operand
-    endmacro
+; initialize the starting buffer and character for tile mapping loop
+TileCreateStart:
+    ;TODO: VduProgAdjust TileCreateID, TileCreateSource, SetFromBuffer, TempBufferID
+    VduProgCall TileCreateLoopID
+TileCreateStartLength: equ $ - TileCreateStart
 
-    macro BufferCall buffer
-    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand ; 23, 0, &A0
-    defw GradientSegmentStepID         ; target
-    defb VDU_BufferCall             ; command
-    endmacro
+; map a bitmap to a character number
+TileMap:
+    defb VDU_Command, VDU_SystemCommand, VDU_MapCharToBitmap
+TileMapChar: equ $ - TileMap
+    defb 0
+TileMapBitmap: equ $ - TileMap
+    defw TileBufferStartID
+TileMapLength: equ $ - TileMap
 
-    macro JumpWhileLessOrEqual buffer, offset, value
-    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand ; 23, 0, &A0
-    defw buffer                         ; target
-    defb VDU_BufferConditionalJump      ; command
-    defb VDU_BufferConditionLessOrEqual ; operation
-    defw GradientSegmentStepID          ; source buffer
-    defw offset                         ; offset
-    defb value                          ; value
-    endmacro
+; map all 256 characters to the corresponding bitmap
+TileMapLoop:
+    VduProgCall TileMapID
+    VduProgAdjust TileMapID, TileMapChar, VDU_BufferOpAdd, 1
+    VduProgJumpIf TileMapLoopID, TileMapID, TileMapChar, VDU_BufferCondNE, 0
+TileMapLoopLength: equ $ - TileMapLoop
 
-GradientSegmentLoop:
-    BufferCall GradientSegmentStepID
-    IncBufferByte GradientSegmentStepID, GradientTargetID1, 1
-    IncBufferByte GradientSegmentStepID, GradientTargetID2, 1
-    ;IncBufferByte GradientSegmentStepID, GradientTargetID3, 1
-    IncBufferByte GradientSegmentStepID, GradientSourceID, 1
-    ;IncBufferByte GradientSegmentStepID, GradientCharID, 1
-    JumpWhileLessOrEqual GradientSegmentLoopID, GradientSourceID, GradientCount
-    SetBufferByte GradientSegmentStepID, GradientSourceID, 0
-GradientSegmentLoopLength: equ $ - GradientSegmentLoop
+; initialize the starting buffer and character for tile mapping loop
+TileMapStart:
+    ; TODO: VduProgAdjust TileMapID, TileMapBitmap, SetFromBuffer, TempBufferID
+    VduProgAdjust TileMap, TileMapChar, VDU_BufferOpSet, 0
+    VduProgCall TileMapLoopID
+TileMapStartLength: equ $ - TileMapStart

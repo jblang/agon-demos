@@ -108,3 +108,29 @@ VduBufferBitmapExpand:
     VduSendByte b
     pop af
     ret
+
+; macros for defining VDU programs
+    macro VduProgAdjust buffer, offset, operation, operand
+    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand
+    defw buffer
+    defb VDU_BufferAdjust
+    defb operation
+    defw offset
+    defb operand
+    endmacro
+
+    macro VduProgCall buffer
+    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand
+    defw buffer
+    defb VDU_BufferCall
+    endmacro
+
+    macro VduProgJumpIf dest, source, offset, condition, operand
+    defb VDU_Command, VDU_SystemCommand, VDU_BufferCommand
+    defw dest
+    defb VDU_BufferConditionalJump
+    defb condition
+    defw source
+    defw offset
+    defb operand
+    endmacro

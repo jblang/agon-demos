@@ -25,7 +25,7 @@
     include "vdu/mos.inc"           ; VDP-related MOS calls
 
     include "vdu/text.inc"          ; Text commands
-    include "vdu/graphics.inc"      ; Graphics commands
+    include "vdu/plot.inc"          ; Graphics commands
     include "vdu/system.inc"        ; System commands
 
     include "vdu/audio.inc"         ; Audio API

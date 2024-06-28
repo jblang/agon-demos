@@ -166,29 +166,29 @@ VDU_BufferSpecial: equ $ffff
 ; Buffer Conditional Commands
 VDU_BufferConditionalJump: equ 8
 
-VDU_BufferConditionExists: equ 0
-VDU_BufferConditionNotExists: equ 1
-VDU_BufferConditionEqual: equ 2
-VDU_BufferConditionNotEqual: equ 3
-VDU_BufferConditionLessThan: equ 4
-VDU_BufferConditionGreaterThan: equ 5
-VDU_BufferConditionLessOrEqual: equ 6
-VDU_BufferConditionGreaterOrEqual: equ 7
-VDU_BufferConditionAnd: equ 8
-VDU_BufferConditionOr: equ 9
+VDU_BufferCondNZ: equ 0
+VDU_BufferCondZ: equ 1
+VDU_BufferCondEQ: equ 2
+VDU_BufferCondNE: equ 3
+VDU_BufferCondLT: equ 4
+VDU_BufferCondGT: equ 5
+VDU_BufferCondLE: equ 6
+VDU_BufferCondGE: equ 7
+VDU_BufferCondAnd: equ 8
+VDU_BufferCondOr: equ 9
 
 ; Buffer Adjust Commands
 ; https://github.com/AgonConsole8/agon-docs/blob/main/docs/vdp/Buffered-Commands-API.md#command-5-adjust-buffer-contents
 VDU_BufferAdjust: equ 5
 
-VDU_BufferAdjustNot: equ 0
-VDU_BufferAdjustNegate: equ 1
-VDU_BufferAdjustSet: equ 2
-VDU_BufferAdjustAdd: equ 3
-VDU_BufferAdjustAddCarry: equ 4
-VDU_BufferAdjustAnd: equ 5
-VDU_BufferAdjustOr: equ 6
-VDU_BufferAdjustXor: equ 7
+VDU_BufferOpNot: equ 0
+VDU_BufferOpNegate: equ 1
+VDU_BufferOpSet: equ 2
+VDU_BufferOpAdd: equ 3
+VDU_BufferOpAddCarry: equ 4
+VDU_BufferOpAnd: equ 5
+VDU_BufferOpOr: equ 6
+VDU_BufferOpXor: equ 7
 
 VDU_BufferFlagAdvancedOffsets: equ 1 << 3
 VDU_BufferFlagFetchOperand: equ 1 << 4

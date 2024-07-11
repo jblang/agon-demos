@@ -21,7 +21,7 @@
 
 ; Convenience wrappers for MOS calls to interact with VDP
 
-; Send a single byte to the CPU
+; Send a single byte to the VDU
 ; Caller must push/pop af if necessary
     macro VduSendByte value
         ld a, value
